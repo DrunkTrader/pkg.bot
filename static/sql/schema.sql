@@ -1,7 +1,18 @@
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
+-- name: pragma
+-- Concurrency (minimal write concern)
+PRAGMA journal_mode       = WAL;
+PRAGMA busy_timeout       = 10000;
+PRAGMA wal_autocheckpoint = 0;          -- Disable auto-checkpoint; do it manually during maintenance
+PRAGMA cache_size         = -256000;    -- 256MB cache (or more if available)
+PRAGMA temp_store         = MEMORY;
+PRAGMA mmap_size          = 1073741824; -- 1GB mmap - keep entire DB in memory if possible
+PRAGMA foreign_keys       = ON;
+PRAGMA query_only         = OFF;
+PRAGMA analysis_limit     = 1000;
 
-CREATE TABLE repos (
+
+-- name: schema
+CREATE TABLE IF NOT EXISTS repos (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     slug              TEXT    NOT NULL,           -- 'nixpkgs-unstable', 'arch-extra', 'aur'
     name              TEXT    NOT NULL,           -- 'Nixpkgs (unstable)'
@@ -25,7 +36,7 @@ CREATE TABLE repos (
 ) STRICT;
 
 -- packages
-CREATE TABLE packages (
+CREATE TABLE IF NOT EXISTS packages (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     repo_id           INTEGER NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
     slug              TEXT    NOT NULL,           -- unique string slug that the repo uses. eg: nix (something.name), pacman (pkg), aur (name) etc.
@@ -67,14 +78,14 @@ CREATE TABLE packages (
     UNIQUE (repo_id, slug)
 ) STRICT;
 
-CREATE INDEX idx_packages_name      ON packages (name);
-CREATE INDEX idx_packages_repo_name ON packages (repo_id, name);
-CREATE INDEX idx_packages_name_norm ON packages (name_norm);
-CREATE INDEX idx_packages_pkg_base  ON packages (repo_id, pkg_base) WHERE pkg_base IS NOT NULL;
-CREATE INDEX idx_packages_hash      ON packages (repo_id, hash);
+CREATE INDEX IF NOT EXISTS idx_packages_name      ON packages (name);
+CREATE INDEX IF NOT EXISTS idx_packages_repo_name ON packages (repo_id, name);
+CREATE INDEX IF NOT EXISTS idx_packages_name_norm ON packages (name_norm);
+CREATE INDEX IF NOT EXISTS idx_packages_pkg_base  ON packages (repo_id, pkg_base) WHERE pkg_base IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_packages_hash      ON packages (repo_id, hash);
 
 -- maintainers
-CREATE TABLE maintainers (
+CREATE TABLE IF NOT EXISTS maintainers (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     repo_id           INTEGER NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
     slug              TEXT    NOT NULL,           -- normalized handle
@@ -90,20 +101,20 @@ CREATE TABLE maintainers (
     UNIQUE (repo_id, slug)
 ) STRICT;
 
-CREATE INDEX idx_maintainers_slug ON maintainers (slug) WHERE slug IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_maintainers_slug ON maintainers (slug) WHERE slug IS NOT NULL;
 
 
-CREATE TABLE package_maintainers (
+CREATE TABLE IF NOT EXISTS package_maintainers (
     package_id        INTEGER NOT NULL REFERENCES packages(id)    ON DELETE CASCADE,
     maintainer_id     INTEGER NOT NULL REFERENCES maintainers(id) ON DELETE CASCADE,
 
     PRIMARY KEY (package_id, maintainer_id)
 ) STRICT, WITHOUT ROWID;
-CREATE INDEX idx_pkg_maintainers ON package_maintainers (maintainer_id, package_id);
+CREATE INDEX IF NOT EXISTS idx_pkg_maintainers ON package_maintainers (maintainer_id, package_id);
 
 -- FTS.
 
-CREATE VIRTUAL TABLE packages_fts USING fts5 (
+CREATE VIRTUAL TABLE IF NOT EXISTS packages_fts USING fts5 (
     -- SQLite's built in rowid is used as the primary key to reference packages.id
     name,
     name_norm,
@@ -125,7 +136,7 @@ CREATE VIRTUAL TABLE packages_fts USING fts5 (
 -- Plain text fields are indexed as-is. `groups` and `keywords`, which are JSON
 -- arrays in the format ["a", "b", ...], are flattened into a space separated
 -- series of strings. Eg: groups => a b c
-CREATE TRIGGER trg_packages_after_insert AFTER INSERT ON packages
+CREATE TRIGGER IF NOT EXISTS trg_packages_after_insert AFTER INSERT ON packages
 BEGIN
     INSERT INTO packages_fts (rowid, name, name_norm, slug, pkg_base, excerpt, description, "groups", keywords)
     VALUES (
@@ -141,12 +152,12 @@ BEGIN
     );
 END;
 
-CREATE TRIGGER trg_packages_after_delete AFTER DELETE ON packages
+CREATE TRIGGER IF NOT EXISTS trg_packages_after_delete AFTER DELETE ON packages
 BEGIN
     DELETE FROM packages_fts WHERE rowid = OLD.id;
 END;
 
-CREATE TRIGGER trg_packages_after_update
+CREATE TRIGGER IF NOT EXISTS trg_packages_after_update
 AFTER UPDATE OF name, name_norm, slug, pkg_base, excerpt, description, "groups", keywords ON packages
 BEGIN
     DELETE FROM packages_fts WHERE rowid = OLD.id;
@@ -165,7 +176,7 @@ BEGIN
     );
 END;
 
-CREATE VIRTUAL TABLE maintainers_fts USING fts5 (
+CREATE VIRTUAL TABLE IF NOT EXISTS maintainers_fts USING fts5 (
     -- SQLite's built in rowid is used as the primary key to reference maintainers.id
     handle,
     name,
@@ -175,18 +186,18 @@ CREATE VIRTUAL TABLE maintainers_fts USING fts5 (
 );
 
 -- Keep the fts table in sync with rows in maintainers.
-CREATE TRIGGER trg_maintainers_after_insert AFTER INSERT ON maintainers
+CREATE TRIGGER IF NOT EXISTS trg_maintainers_after_insert AFTER INSERT ON maintainers
 BEGIN
     INSERT INTO maintainers_fts (rowid, handle, name, email)
     VALUES (NEW.id, NEW.handle, NEW.name, NEW.email);
 END;
 
-CREATE TRIGGER trg_maintainers_after_delete AFTER DELETE ON maintainers
+CREATE TRIGGER IF NOT EXISTS trg_maintainers_after_delete AFTER DELETE ON maintainers
 BEGIN
     DELETE FROM maintainers_fts WHERE rowid = OLD.id;
 END;
 
-CREATE TRIGGER trg_maintainers_after_update
+CREATE TRIGGER IF NOT EXISTS trg_maintainers_after_update
 AFTER UPDATE OF handle, name, email ON maintainers
 BEGIN
     DELETE FROM maintainers_fts WHERE rowid = OLD.id;

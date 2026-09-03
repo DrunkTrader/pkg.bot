@@ -13,22 +13,11 @@ root_url = "http://localhost:9000"
 # Maximum connections.
 max_conns = 100
 
+
 [api_results]
-# Default number of entries to return per page when paginated.
+# Default number of packages to return per page when paginated.
 per_page = 20
 
 # The absolute maximum number of results to return per query in case the
-# per_page value above if overwritten from the frontend.
-max_per_page = 20
-
-
-[site_results]
-# Default number of entries to return per page when paginated.
-per_page = 20
-
-# The absolute maximum number of results to return per query in case the
-# per_page value above if overwritten from the frontend.
-max_per_page = 20
-
-# Count of page numbers to render in the pagination list.
-num_page_nums = 10
+# per_page value above is overwritten from the frontend.
+max_per_page = 50
