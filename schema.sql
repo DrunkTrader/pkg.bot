@@ -24,7 +24,7 @@ CREATE TABLE repos (
     UNIQUE (slug)
 ) STRICT;
 
-
+-- packages
 CREATE TABLE packages (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     repo_id           INTEGER NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
@@ -52,9 +52,6 @@ CREATE TABLE packages (
     "groups"          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid("groups")),
     keywords          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(keywords)),
 
-    -- [{"name":..., "email":..., "handle":..., "url":...}]
-    maintainers       TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(maintainers)),
-
     status            INTEGER NOT NULL DEFAULT 0, -- bitflags representing broken|deprecated|outdated|deleted etc
     download_bytes    INTEGER,
     installed_bytes   INTEGER,
@@ -76,6 +73,35 @@ CREATE INDEX idx_packages_name_norm ON packages (name_norm);
 CREATE INDEX idx_packages_pkg_base  ON packages (repo_id, pkg_base) WHERE pkg_base IS NOT NULL;
 CREATE INDEX idx_packages_hash      ON packages (repo_id, hash);
 
+-- maintainers
+CREATE TABLE maintainers (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    repo_id           INTEGER NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    slug              TEXT    NOT NULL,           -- normalized handle
+    handle            TEXT    NOT NULL,           -- as displayed upstream. eg: 'UserName' or @username
+    name              TEXT,                       -- display name. eg: 'User Name'
+    email             TEXT,
+    url               TEXT,
+
+    package_count     INTEGER NOT NULL DEFAULT 0, -- recomputed after every sync
+    created_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+
+    UNIQUE (repo_id, slug)
+) STRICT;
+
+CREATE INDEX idx_maintainers_slug ON maintainers (slug) WHERE slug IS NOT NULL;
+
+
+CREATE TABLE package_maintainers (
+    package_id        INTEGER NOT NULL REFERENCES packages(id)    ON DELETE CASCADE,
+    maintainer_id     INTEGER NOT NULL REFERENCES maintainers(id) ON DELETE CASCADE,
+
+    PRIMARY KEY (package_id, maintainer_id)
+) STRICT, WITHOUT ROWID;
+CREATE INDEX idx_pkg_maintainers ON package_maintainers (maintainer_id, package_id);
+
+-- FTS.
 
 CREATE VIRTUAL TABLE packages_fts USING fts5 (
     -- SQLite's built in rowid is used as the primary key to reference packages.id
@@ -87,7 +113,6 @@ CREATE VIRTUAL TABLE packages_fts USING fts5 (
     description,
     "groups",
     keywords,
-    tokenize = "unicode61 tokenchars '-._+'",
 
     -- This is sqlite's `content` keyword. Setting this to ''
     -- avoids text content being duplicated in the fts table.
@@ -138,4 +163,34 @@ BEGIN
         (SELECT GROUP_CONCAT(value, ' ') FROM JSON_EACH(NEW."groups")),
         (SELECT GROUP_CONCAT(value, ' ') FROM JSON_EACH(NEW.keywords))
     );
+END;
+
+CREATE VIRTUAL TABLE maintainers_fts USING fts5 (
+    -- SQLite's built in rowid is used as the primary key to reference maintainers.id
+    handle,
+    name,
+    email,
+    content='',
+    contentless_delete=1
+);
+
+-- Keep the fts table in sync with rows in maintainers.
+CREATE TRIGGER trg_maintainers_after_insert AFTER INSERT ON maintainers
+BEGIN
+    INSERT INTO maintainers_fts (rowid, handle, name, email)
+    VALUES (NEW.id, NEW.handle, NEW.name, NEW.email);
+END;
+
+CREATE TRIGGER trg_maintainers_after_delete AFTER DELETE ON maintainers
+BEGIN
+    DELETE FROM maintainers_fts WHERE rowid = OLD.id;
+END;
+
+CREATE TRIGGER trg_maintainers_after_update
+AFTER UPDATE OF handle, name, email ON maintainers
+BEGIN
+    DELETE FROM maintainers_fts WHERE rowid = OLD.id;
+
+    INSERT INTO maintainers_fts (rowid, handle, name, email)
+    VALUES (NEW.id, NEW.handle, NEW.name, NEW.email);
 END;
