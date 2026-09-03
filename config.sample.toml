@@ -1,0 +1,34 @@
+[app]
+# Network address for the server to listen on.
+address = "127.0.0.1:9000"
+
+# The website URL to be used on the frontend pages.
+root_url = "http://localhost:9000"
+
+
+################################################################################
+
+
+[db]
+# Maximum connections.
+max_conns = 100
+
+[api_results]
+# Default number of entries to return per page when paginated.
+per_page = 20
+
+# The absolute maximum number of results to return per query in case the
+# per_page value above if overwritten from the frontend.
+max_per_page = 20
+
+
+[site_results]
+# Default number of entries to return per page when paginated.
+per_page = 20
+
+# The absolute maximum number of results to return per query in case the
+# per_page value above if overwritten from the frontend.
+max_per_page = 20
+
+# Count of page numbers to render in the pagination list.
+num_page_nums = 10
