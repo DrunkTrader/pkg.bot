@@ -6,11 +6,17 @@ use sqlx::{
     Decode, Encode, FromRow, Sqlite, Type,
 };
 
-/// Package status bitflags stored in packages.status.
-pub const STATUS_BROKEN: i64 = 1;
-pub const STATUS_DEPRECATED: i64 = 2;
-pub const STATUS_OUTDATED: i64 = 4;
-pub const STATUS_DELETED: i64 = 8;
+/// Status of a package (eg: active, deleted etc.).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[serde(rename_all = "lowercase")]
+#[sqlx(rename_all = "lowercase")]
+pub enum PackageStatus {
+    #[default]
+    Active,
+    Broken,
+    Outdated,
+    Deleted,
+}
 
 /// JSON array wrapper for SQLite TEXT columns storing JSON arrays.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -141,7 +147,7 @@ pub struct Package {
     pub groups: StringArray,
     pub keywords: StringArray,
 
-    pub status: i64,
+    pub status: PackageStatus,
     pub download_bytes: Option<i64>,
     pub installed_bytes: Option<i64>,
     pub score: f64,
@@ -188,7 +194,7 @@ pub struct PackageQuery {
     #[serde(default)]
     pub platform: Vec<String>,
 
-    /// Comma separated status names (broken, deprecated, outdated, deleted).
+    /// Status (active, broken, outdated, deleted).
     #[serde(default)]
     pub status: String,
 

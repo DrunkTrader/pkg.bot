@@ -1,8 +1,6 @@
 use sqlx::sqlite::SqlitePool;
 
-use crate::models::{
-    q, Package, PackageQuery, STATUS_BROKEN, STATUS_DELETED, STATUS_DEPRECATED, STATUS_OUTDATED,
-};
+use crate::models::{q, Package, PackageQuery};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -53,7 +51,7 @@ impl Manager {
             .bind(to_json_list(&pq.tags))
             .bind(to_json_list(&pq.licenses))
             .bind(to_json_list(&pq.platform))
-            .bind(to_status_mask(&pq.status))
+            .bind(&pq.status)
             .bind(pq.offset)
             .bind(pq.limit)
             .fetch_all(&self.db)
@@ -91,17 +89,4 @@ fn to_json_list(vals: &[String]) -> String {
         .filter(|i| !i.is_empty())
         .collect();
     serde_json::to_string(&items).unwrap_or_else(|_| "[]".to_string())
-}
-
-/// Convert a comma separated list of status names into a bitmask.
-fn to_status_mask(s: &str) -> i64 {
-    s.split(',')
-        .filter_map(|v| match v.trim().to_lowercase().as_str() {
-            "broken" => Some(STATUS_BROKEN),
-            "deprecated" => Some(STATUS_DEPRECATED),
-            "outdated" => Some(STATUS_OUTDATED),
-            "deleted" => Some(STATUS_DELETED),
-            _ => None,
-        })
-        .fold(0, |mask, f| mask | f)
 }

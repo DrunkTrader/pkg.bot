@@ -4,7 +4,7 @@ SELECT id FROM repos WHERE id = $1;
 -- name: query-packages
 -- Search packages in a repo with optional FTS and filters.
 -- $1: repo_id, $2: FTS query, $3: maintainer slug, $4: tags (JSON array),
--- $5: licenses (JSON array), $6: platforms (JSON array), $7: status bitmask,
+-- $5: licenses (JSON array), $6: platforms (JSON array), $7: status,
 -- $8: offset, $9: limit
 SELECT p.*, r.slug AS repo,
        (SELECT JSON_GROUP_ARRAY(JSON_OBJECT(
@@ -38,7 +38,7 @@ FROM (
       AND ($6 = '[]' OR EXISTS (
           SELECT 1 FROM JSON_EACH(p.platforms) pf, JSON_EACH($6) qf WHERE pf.value = qf.value
       ))
-      AND ($7 = 0 OR (p.status & $7) != 0)
+      AND ($7 = '' OR p.status = $7)
     ORDER BY rank, p.name
     LIMIT $9 OFFSET $8
 ) p

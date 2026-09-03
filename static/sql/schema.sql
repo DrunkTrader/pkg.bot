@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS packages (
     "groups"          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid("groups")),
     keywords          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(keywords)),
 
-    status            INTEGER NOT NULL DEFAULT 0, -- bitflags representing broken|deprecated|outdated|deleted etc
+    status            TEXT    NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'broken', 'outdated', 'deleted')),
     download_bytes    INTEGER,
     installed_bytes   INTEGER,
     score             REAL    NOT NULL DEFAULT 0,
