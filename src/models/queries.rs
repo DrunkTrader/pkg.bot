@@ -18,12 +18,12 @@ pub struct Queries {
     pub get_repos: yesqlr::Query,
     #[name = "get-package"]
     pub get_package: yesqlr::Query,
-    #[name = "query-packages"]
-    pub query_packages: yesqlr::Query,
-    #[name = "cte-query-packages-fts"]
-    pub cte_query_packages_fts: yesqlr::Query,
-    #[name = "cte-query-packages-all"]
-    pub cte_query_packages_all: yesqlr::Query,
+    #[name = "get-packages"]
+    pub get_packages: yesqlr::Query,
+    #[name = "count-packages"]
+    pub count_packages: yesqlr::Query,
+    #[name = "search-packages"]
+    pub search_packages: yesqlr::Query,
 }
 
 lazy_static! {
@@ -36,12 +36,16 @@ lazy_static! {
         Queries::try_from(result).expect("error reading SQL queries")
     };
 
-    /// query-packages with the FTS `matches` CTE prepended, used when there is a
-    /// search string.
-    pub static ref query_packages_fts: String =
-        format!("{}\n{}", q.cte_query_packages_fts.query, q.query_packages.query);
+    /// get-packages paginates forward.
+    pub static ref get_packages_next: String = keyset(">", "ASC");
 
-    /// query-packages with the full-scan `matches` CTE prepended, used when browsing.
-    pub static ref query_packages_all: String =
-        format!("{}\n{}", q.cte_query_packages_all.query, q.query_packages.query);
+    /// get-packages paginates backward.
+    pub static ref get_packages_prev: String = keyset("<", "DESC");
+}
+
+fn keyset(cmp: &str, dir: &str) -> String {
+    q.get_packages
+        .query
+        .replace("{CMP}", cmp)
+        .replace("{DIR}", dir)
 }

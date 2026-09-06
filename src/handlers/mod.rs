@@ -11,7 +11,10 @@ use axum::{
 use serde::Serialize;
 use tera::Tera;
 
-use crate::{manager::Manager, models::Repo};
+use crate::{
+    manager::Manager,
+    models::{Cursor, PackageQuery, PackageResults, Repo},
+};
 
 /// Application context passed to all handlers.
 pub struct Ctx {
@@ -111,6 +114,54 @@ impl IntoResponse for ApiErr {
 }
 
 pub type Result<T> = std::result::Result<T, ApiErr>;
+
+/// Fetch a page of packages.
+pub async fn list_packages(ctx: &Ctx, repo: &Repo, q: &PackageQuery) -> Result<PackageResults> {
+    if !q.search().0.is_empty() {
+        let (packages, total) = ctx.mgr.search_packages(q).await?;
+
+        return Ok(PackageResults {
+            packages,
+            per_page: q.limit,
+            total,
+            page: q.page,
+            total_pages: total_pages(total, q.limit),
+            next: None,
+            prev: None,
+        });
+    }
+
+    let (packages, has_more) = ctx.mgr.get_packages(q).await?;
+    let total = if q.has_filters() {
+        ctx.mgr.count_packages(q).await?
+    } else {
+        repo.package_count
+    };
+
+    // Keyset pagination.
+    let (first, last) = (
+        packages.first().map(Cursor::of),
+        packages.last().map(Cursor::of),
+    );
+    let (next, prev) = if q.before.is_empty() {
+        (
+            if has_more { last } else { None },
+            if q.after.is_empty() { None } else { first },
+        )
+    } else {
+        (last, if has_more { first } else { None })
+    };
+
+    Ok(PackageResults {
+        packages,
+        per_page: q.limit,
+        total,
+        page: 0,
+        total_pages: 0,
+        next,
+        prev,
+    })
+}
 
 /// Pagination helper.
 pub fn paginate(

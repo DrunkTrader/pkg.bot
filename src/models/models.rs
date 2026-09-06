@@ -146,6 +146,9 @@ pub struct Repo {
 /// A package in a repository.
 #[derive(Debug, Clone, Default, Serialize, FromRow)]
 pub struct Package {
+    #[serde(skip)]
+    pub id: i64,
+
     /// Slug of the repo the package belongs to.
     pub repo: String,
 
@@ -221,6 +224,13 @@ pub struct PackageQuery {
     #[serde(default)]
     pub status: String,
 
+    /// Keyset pagination fields.
+    #[serde(default)]
+    pub after: String,
+
+    #[serde(default)]
+    pub before: String,
+
     #[serde(default)]
     pub page: i32,
 
@@ -248,6 +258,14 @@ impl PackageQuery {
         Ok(())
     }
 
+    pub fn has_filters(&self) -> bool {
+        !self.maintainer.is_empty()
+            || !self.status.is_empty()
+            || !self.tags.is_empty()
+            || !self.licenses.is_empty()
+            || !self.platform.is_empty()
+    }
+
     pub fn search(&self) -> (&str, bool) {
         if self.name.trim().is_empty() {
             (self.query.trim(), false)
@@ -258,13 +276,45 @@ impl PackageQuery {
 }
 
 /// Package search results.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct PackageResults {
     pub packages: Vec<Package>,
-    pub page: i32,
     pub per_page: i32,
     pub total: i64,
+
+    // Offset pagination (search).
+    pub page: i32,
     pub total_pages: i32,
+
+    // Keyset pagination (listing).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prev: Option<String>,
+}
+
+/// Keyset pagination key serialized as `id:name`.
+#[derive(Debug, Clone, Default)]
+pub struct Cursor {
+    pub id: i64,
+    pub name: String,
+}
+
+impl Cursor {
+    pub fn of(p: &Package) -> String {
+        format!("{}:{}", p.id, p.name)
+    }
+
+    /// Parse a keyset pagination string.
+    pub fn parse(s: &str) -> Self {
+        match s.split_once(':') {
+            Some((id, name)) => Self {
+                id: id.parse().unwrap_or_default(),
+                name: name.to_string(),
+            },
+            None => Self::default(),
+        }
+    }
 }
 
 /// Application configuration.

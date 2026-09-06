@@ -2,4 +2,4 @@ mod models;
 mod queries;
 
 pub use models::*;
-pub use queries::{q, query_packages_all, query_packages_fts, schema};
+pub use queries::{get_packages_next, get_packages_prev, q, schema};

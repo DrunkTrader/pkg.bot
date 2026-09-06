@@ -1,6 +1,6 @@
 use sqlx::sqlite::SqlitePool;
 
-use crate::models::{q, query_packages_all, query_packages_fts, Package, PackageQuery, Repo};
+use crate::models::{get_packages_next, get_packages_prev, q, Cursor, Package, PackageQuery, Repo};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -34,26 +34,60 @@ impl Manager {
             .ok_or(Error::NotFound)
     }
 
-    pub async fn query_packages(&self, pq: &PackageQuery) -> Result<(Vec<Package>, i64), Error> {
-        let (term, name_only) = pq.search();
+    /// Get alphabetical listing of a repo's packages.
+    pub async fn get_packages(&self, pq: &PackageQuery) -> Result<(Vec<Package>, bool), Error> {
+        let back = !pq.before.is_empty();
+        let cur = Cursor::parse(if back { &pq.before } else { &pq.after });
 
-        let fts = to_fts_query(term);
-        let has_fts = !fts.is_empty();
+        let sql: &str = if back {
+            &get_packages_prev
+        } else {
+            &get_packages_next
+        };
+
+        // Fetch one extra row to detect whether there is another page after this.
+        let mut packages: Vec<Package> = sqlx::query_as(sql)
+            .bind(pq.repo_id)
+            .bind(&pq.maintainer)
+            .bind(to_json_list(&pq.tags))
+            .bind(to_json_list(&pq.licenses))
+            .bind(to_json_list(&pq.platform))
+            .bind(&pq.status)
+            .bind(&cur.name)
+            .bind(cur.id)
+            .bind(pq.limit + 1)
+            .fetch_all(&self.db)
+            .await?;
+
+        let has_more = packages.len() > pq.limit as usize;
+        packages.truncate(pq.limit as usize);
+        if back {
+            packages.reverse();
+        }
+
+        Ok((packages, has_more))
+    }
+
+    pub async fn count_packages(&self, pq: &PackageQuery) -> Result<i64, Error> {
+        Ok(sqlx::query_scalar(&q.count_packages.query)
+            .bind(pq.repo_id)
+            .bind(&pq.maintainer)
+            .bind(to_json_list(&pq.tags))
+            .bind(to_json_list(&pq.licenses))
+            .bind(to_json_list(&pq.platform))
+            .bind(&pq.status)
+            .fetch_one(&self.db)
+            .await?)
+    }
+
+    pub async fn search_packages(&self, pq: &PackageQuery) -> Result<(Vec<Package>, i64), Error> {
+        let (term, name_only) = pq.search();
         let raw = term.to_lowercase();
         let norm = norm_name(term);
 
-        // Browsing uses a variant of the query that doesn't touch the FTS table at
-        // all, so there is no MATCH to feed when there's nothing to search for.
-        let sql: &str = if has_fts {
-            &query_packages_fts
-        } else {
-            &query_packages_all
-        };
-
-        let results: Vec<Package> = sqlx::query_as(sql)
+        let packages: Vec<Package> = sqlx::query_as(&q.search_packages.query)
             .bind(pq.repo_id)
-            .bind(&fts)
-            .bind(has_fts as i32)
+            .bind(to_fts_query(term))
             .bind(&raw)
             .bind(&norm)
             .bind(&pq.maintainer)
@@ -61,14 +95,14 @@ impl Manager {
             .bind(to_json_list(&pq.licenses))
             .bind(to_json_list(&pq.platform))
             .bind(&pq.status)
+            .bind(if name_only { norm.as_str() } else { "" })
             .bind(pq.offset)
             .bind(pq.limit)
-            .bind(if name_only { norm.as_str() } else { "" })
             .fetch_all(&self.db)
             .await?;
 
-        let total = results.first().map(|p| p.total).unwrap_or(0);
-        Ok((results, total))
+        let total = packages.first().map(|p| p.total).unwrap_or(0);
+        Ok((packages, total))
     }
 }
 

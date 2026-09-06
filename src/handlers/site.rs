@@ -7,7 +7,7 @@ use axum::{
 };
 use axum_extra::extract::Query;
 
-use super::{paginate, total_pages, Ctx};
+use super::{list_packages, paginate, Ctx};
 use crate::models::{PackageQuery, PackageResults};
 
 /// Landing page.
@@ -52,11 +52,11 @@ pub async fn search(
     q.offset = offset;
     q.limit = per_page;
 
-    let (packages, total) = match ctx.mgr.query_packages(&q).await {
+    let results = match list_packages(&ctx, repo, &q).await {
         Ok(res) => res,
         Err(e) => {
-            log::error!("error querying packages: {}", e);
-            (vec![], 0)
+            log::error!("error querying packages: {}", e.message);
+            PackageResults::default()
         }
     };
 
@@ -65,26 +65,17 @@ pub async fn search(
     tpl_ctx.insert("repo", repo);
     tpl_ctx.insert("q", &q);
     insert_search(&mut tpl_ctx, &q);
-    tpl_ctx.insert(
-        "results",
-        &PackageResults {
-            packages,
-            page,
-            per_page,
-            total,
-            total_pages: total_pages(total, per_page),
-        },
-    );
+    tpl_ctx.insert("results", &results);
 
-    // Prefix that pagination links append `page=$n` to, retaining all the
-    // other search params.
+    // Prefix that pagination links append their own cursor or page param to,
+    // retaining all the other search params.
     tpl_ctx.insert(
         "pg_url",
         &format!(
             "{}/repos/{}?{}",
             ctx.consts.root_url,
             repo.slug,
-            strip_page(&raw_query.unwrap_or_default())
+            strip_pagination(&raw_query.unwrap_or_default())
         ),
     );
 
@@ -188,11 +179,16 @@ fn not_found(ctx: &Ctx, message: &str) -> Response {
     render_message(ctx, StatusCode::NOT_FOUND, "Not found", message)
 }
 
-/// Drop the `page` param from a raw query string so that pagination links can
+/// Drop pagination params from a raw query string so that pagination links can
 /// append their own. Eg: "query=vim&page=3" => "query=vim&"
-fn strip_page(raw: &str) -> String {
+fn strip_pagination(raw: &str) -> String {
     raw.split('&')
-        .filter(|p| !p.is_empty() && !p.starts_with("page="))
+        .filter(|p| {
+            !p.is_empty()
+                && !["page=", "after=", "before="]
+                    .iter()
+                    .any(|k| p.starts_with(k))
+        })
         .flat_map(|p| [p, "&"])
         .collect()
 }

@@ -1,5 +1,11 @@
-{# `pg_url` ends with `?` or `?$params&` so that `page=$n` can be appended to it. #}
-{% if results.total_pages > 1 %}
+{% if results.next or results.prev %}
+<nav class="pagination align-center mt-6" aria-label="Pagination">
+  <menu class="buttons">
+    <li><a {% if results.prev %}href="{{ pg_url | safe }}before={{ results.prev | urlencode }}"{% else %}aria-disabled="true"{% endif %} class="button outline small">&larr; Previous</a></li>
+    <li><a {% if results.next %}href="{{ pg_url | safe }}after={{ results.next | urlencode }}"{% else %}aria-disabled="true"{% endif %} class="button outline small">Next &rarr;</a></li>
+  </menu>
+</nav>
+{% elif results.total_pages > 1 %}
 {% set page = results.page %}
 {% set total_pages = results.total_pages %}
 {% set window = 10 %}
