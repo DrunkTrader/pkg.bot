@@ -63,6 +63,9 @@ CREATE TABLE IF NOT EXISTS packages (
     "groups"          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid("groups")),
     keywords          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(keywords)),
 
+    -- Deduplicated tokens from name, slug, excerpt, description, groups, keywords.
+    tokens            TEXT,
+
     status            TEXT    NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'broken', 'outdated', 'deleted')),
     download_bytes    INTEGER,
     installed_bytes   INTEGER,
@@ -113,17 +116,10 @@ CREATE TABLE IF NOT EXISTS package_maintainers (
 CREATE INDEX IF NOT EXISTS idx_pkg_maintainers ON package_maintainers (maintainer_id, package_id);
 
 -- FTS.
-
+-- packages_fts
 CREATE VIRTUAL TABLE IF NOT EXISTS packages_fts USING fts5 (
     -- SQLite's built in rowid is used as the primary key to reference packages.id
-    name,
-    name_norm,
-    slug,
-    pkg_base,
-    excerpt,
-    description,
-    "groups",
-    keywords,
+    tokens,
 
     -- This is sqlite's `content` keyword. Setting this to ''
     -- avoids text content being duplicated in the fts table.
@@ -133,23 +129,9 @@ CREATE VIRTUAL TABLE IF NOT EXISTS packages_fts USING fts5 (
 );
 
 -- Keep the fts table in sync with rows in packages.
--- Plain text fields are indexed as-is. `groups` and `keywords`, which are JSON
--- arrays in the format ["a", "b", ...], are flattened into a space separated
--- series of strings. Eg: groups => a b c
 CREATE TRIGGER IF NOT EXISTS trg_packages_after_insert AFTER INSERT ON packages
 BEGIN
-    INSERT INTO packages_fts (rowid, name, name_norm, slug, pkg_base, excerpt, description, "groups", keywords)
-    VALUES (
-        NEW.id,
-        NEW.name,
-        NEW.name_norm,
-        NEW.slug,
-        NEW.pkg_base,
-        NEW.excerpt,
-        NEW.description,
-        (SELECT GROUP_CONCAT(value, ' ') FROM JSON_EACH(NEW."groups")),
-        (SELECT GROUP_CONCAT(value, ' ') FROM JSON_EACH(NEW.keywords))
-    );
+    INSERT INTO packages_fts (rowid, tokens) VALUES (NEW.id, NEW.tokens);
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_packages_after_delete AFTER DELETE ON packages
@@ -158,24 +140,14 @@ BEGIN
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_packages_after_update
-AFTER UPDATE OF name, name_norm, slug, pkg_base, excerpt, description, "groups", keywords ON packages
+AFTER UPDATE OF tokens ON packages
 BEGIN
     DELETE FROM packages_fts WHERE rowid = OLD.id;
 
-    INSERT INTO packages_fts (rowid, name, name_norm, slug, pkg_base, excerpt, description, "groups", keywords)
-    VALUES (
-        NEW.id,
-        NEW.name,
-        NEW.name_norm,
-        NEW.slug,
-        NEW.pkg_base,
-        NEW.excerpt,
-        NEW.description,
-        (SELECT GROUP_CONCAT(value, ' ') FROM JSON_EACH(NEW."groups")),
-        (SELECT GROUP_CONCAT(value, ' ') FROM JSON_EACH(NEW.keywords))
-    );
+    INSERT INTO packages_fts (rowid, tokens) VALUES (NEW.id, NEW.tokens);
 END;
 
+-- maintainers_fts
 CREATE VIRTUAL TABLE IF NOT EXISTS maintainers_fts USING fts5 (
     -- SQLite's built in rowid is used as the primary key to reference maintainers.id
     handle,

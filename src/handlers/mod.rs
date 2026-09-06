@@ -9,11 +9,16 @@ use axum::{
 };
 use serde::Serialize;
 
-use crate::manager::Manager;
+use crate::{manager::Manager, models::Repo};
 
 /// Application context passed to all handlers.
 pub struct Ctx {
     pub mgr: Arc<Manager>,
+
+    /// All repos in the database, loaded once on boot. New repos added by an
+    /// indexer only show up on the next restart.
+    pub repos: Vec<Repo>,
+
     pub consts: Consts,
 }
 

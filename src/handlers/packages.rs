@@ -15,13 +15,13 @@ pub async fn query_packages(
     Path(repo_id): Path<i64>,
     Query(mut q): Query<PackageQuery>,
 ) -> Result<ApiResp<PackageResults>> {
-    ctx.mgr.repo_exists(repo_id).await.map_err(|e| {
-        if matches!(e, crate::manager::Error::NotFound) {
-            ApiErr::new("repo not found", StatusCode::NOT_FOUND)
-        } else {
-            ApiErr::new(e.to_string(), StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    })?;
+    if !ctx.repos.iter().any(|r| r.id == repo_id) {
+        return Err(ApiErr::new("repo not found", StatusCode::NOT_FOUND));
+    }
+
+    if let Err(e) = q.validate() {
+        return Err(ApiErr::new(e, StatusCode::BAD_REQUEST));
+    }
 
     q.repo_id = repo_id;
 

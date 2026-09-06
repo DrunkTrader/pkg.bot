@@ -79,9 +79,20 @@ async fn main() {
     // Initialize manager.
     let mgr = Arc::new(Manager::new(db));
 
+    // Load the repos once. They only change when an indexer adds one.
+    let repos = match mgr.get_repos().await {
+        Ok(r) => r,
+        Err(e) => {
+            log::error!("error loading repos: {}", e);
+            std::process::exit(1);
+        }
+    };
+    log::info!("loaded {} repos", repos.len());
+
     // Setup the global app context used in HTTP handlers.
     let ctx = Arc::new(Ctx {
         mgr,
+        repos,
 
         // Global constants populated from config.
         consts: Consts {

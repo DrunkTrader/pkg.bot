@@ -120,6 +120,29 @@ impl<'r> Decode<'r, Sqlite> for JsonString {
     }
 }
 
+/// A package repository (a distro's repo, channel or branch).
+#[derive(Debug, Clone, Default, Serialize, FromRow)]
+pub struct Repo {
+    pub id: i64,
+    pub slug: String,
+    pub name: String,
+    pub manager: String,
+    pub distro: Option<String>,
+    pub branch: Option<String>,
+
+    pub homepage_url: Option<String>,
+    pub source_url: Option<String>,
+    pub revision: Option<String>,
+    pub pkg_url_template: Option<String>,
+
+    pub score: f64,
+    pub package_count: i64,
+
+    pub created_at: String,
+    pub updated_at: String,
+    pub synced_at: String,
+}
+
 /// A package in a repository.
 #[derive(Debug, Clone, Default, Serialize, FromRow)]
 pub struct Package {
@@ -168,13 +191,13 @@ pub struct Package {
 }
 
 /// Package search query parameters.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PackageQuery {
-    /// FTS search across name, excerpt and description.
+    /// Search across every indexed field. Mutually exclusive with `name`.
     #[serde(default)]
     pub query: String,
 
-    /// FTS search restricted to name.
+    /// Search restricted to the package name and slug. Mutually exclusive with `query`.
     #[serde(default)]
     pub name: String,
 
@@ -213,6 +236,25 @@ pub struct PackageQuery {
 
     #[serde(skip)]
     pub limit: i32,
+}
+
+impl PackageQuery {
+    /// Make `query` and `name` mutually exclusive.
+    pub fn validate(&self) -> Result<(), &'static str> {
+        if !self.query.trim().is_empty() && !self.name.trim().is_empty() {
+            return Err("query and name cannot be used together");
+        }
+
+        Ok(())
+    }
+
+    pub fn search(&self) -> (&str, bool) {
+        if self.name.trim().is_empty() {
+            (self.query.trim(), false)
+        } else {
+            (self.name.trim(), true)
+        }
+    }
 }
 
 /// Package search results.
