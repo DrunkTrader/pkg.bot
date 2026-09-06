@@ -1,0 +1,77 @@
+<form class="search-form" method="get" action="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">
+  <fieldset class="group">
+    <input type="search" id="q" name="{{ scope }}" value="{{ term }}" placeholder="Search packages"
+      aria-label="Search packages" autocomplete="off" autofocus required />
+
+    <select id="scope" aria-label="Search in">
+      <option value="query"{% if scope == "query" %} selected{% endif %}>Everything</option>
+      <option value="name"{% if scope == "name" %} selected{% endif %}>Name only</option>
+    </select>
+
+    <select id="repo" aria-label="Repository">
+      {%- for r in repos %}
+      <option value="{{ r.slug }}"{% if r.slug == repo.slug %} selected{% endif %}>{{ r.name }}</option>
+      {%- endfor %}
+    </select>
+
+    <button type="submit" aria-label="Search"><span class="icon icon-search"></span></button>
+  </fieldset>
+
+  <ot-dropdown class="advanced">
+    <button type="button" class="ghost small" popovertarget="advanced-search">Advanced search</button>
+
+    <article class="card" popover id="advanced-search">
+      <header>
+        <h4>Advanced search</h4>
+        <p class="text-light">All fields are optional and are combined with the search above.</p>
+      </header>
+
+      <label data-field>
+        Maintainer
+        <input type="text" name="maintainer" value="{{ q.maintainer }}" placeholder="eg: alice" />
+        <small data-hint>The maintainer's handle in the repo.</small>
+      </label>
+
+      <label data-field>
+        Tags
+        <input type="text" name="tags" value="{{ q.tags | join(sep=', ') }}" placeholder="eg: editor, vim" />
+        <small data-hint>Comma separated keywords.</small>
+      </label>
+
+      <label data-field>
+        Licenses
+        <input type="text" name="licenses" value="{{ q.licenses | join(sep=', ') }}" placeholder="eg: MIT, Apache-2.0" />
+        <small data-hint>Comma separated SPDX IDs.</small>
+      </label>
+
+      <label data-field>
+        Platforms
+        <input type="text" name="platform" value="{{ q.platform | join(sep=', ') }}" placeholder="eg: x86_64-linux" />
+        <small data-hint>Comma separated platforms.</small>
+      </label>
+
+      <div data-field>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {%- for s in ["", "active", "broken", "outdated", "deleted"] %}
+          <option value="{{ s }}"{% if s == q.status %} selected{% endif %}>{% if s %}{{ s | capitalize }}{% else %}Any{% endif %}</option>
+          {%- endfor %}
+        </select>
+      </div>
+
+      <div data-field>
+        <label for="per_page">Per page</label>
+        <select id="per_page" name="per_page">
+          {%- for n in [10, 20, 50] %}
+          <option value="{{ n }}"{% if n == q.per_page %} selected{% endif %}>{{ n }}</option>
+          {%- endfor %}
+        </select>
+      </div>
+
+      <footer class="hstack justify-end mt-4">
+        <button type="button" class="outline" popovertarget="advanced-search" popovertargetaction="hide">Close</button>
+        <button type="submit">Search</button>
+      </footer>
+    </article>
+  </ot-dropdown>
+</form>

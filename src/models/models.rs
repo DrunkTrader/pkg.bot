@@ -275,6 +275,9 @@ pub struct Config {
 
     #[serde(default)]
     pub api_results: ApiResultsConfig,
+
+    #[serde(default)]
+    pub site_results: SiteResultsConfig,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -317,6 +320,31 @@ impl Default for ApiResultsConfig {
         Self {
             per_page: default_api_per_page(),
             max_per_page: default_api_max_per_page(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SiteResultsConfig {
+    #[serde(default = "default_site_per_page")]
+    pub per_page: i32,
+    #[serde(default = "default_site_max_per_page")]
+    pub max_per_page: i32,
+}
+
+fn default_site_per_page() -> i32 {
+    50
+}
+
+fn default_site_max_per_page() -> i32 {
+    100
+}
+
+impl Default for SiteResultsConfig {
+    fn default() -> Self {
+        Self {
+            per_page: default_site_per_page(),
+            max_per_page: default_site_max_per_page(),
         }
     }
 }

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pkg.name }} {{ pkg.version }} &middot; {{ repo.name }} &mdash; pkgs{% endblock %}
+{% block description %}{{ pkg.excerpt | default(value=pkg.name) }} &mdash; {{ pkg.name }} {{ pkg.version }} in {{ repo.name }}.{% endblock %}
+
+{% block content %}
+{# Every value interpolated into it is URL encoded, so it is output unescaped. #}
+{% set filter_url = consts.root_url ~ "/repos/" ~ repo.slug ~ "?" %}
+
+<div class="row">
+  <article class="col-8 package">
+    <nav aria-label="Breadcrumb">
+      <ol class="unstyled hstack gap-2 breadcrumb">
+        <li><a href="{{ consts.root_url | safe }}/" class="unstyled">Home</a></li>
+        <li aria-hidden="true">/</li>
+        <li><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}" class="unstyled">{{ repo.name }}</a></li>
+        <li aria-hidden="true">/</li>
+        <li aria-current="page">{{ pkg.name }}</li>
+      </ol>
+    </nav>
+
+    <header class="head">
+      <h1 class="hstack">
+        {{ pkg.name }}
+        {%- if pkg.version %}<span class="badge outline">{{ pkg.version }}</span>{% endif %}
+        {%- if pkg.status != "active" %}<span class="badge" data-variant="warning">{{ pkg.status }}</span>{% endif %}
+      </h1>
+      {% if pkg.slug != pkg.name %}<p class="slug"><code>{{ pkg.slug }}</code></p>{% endif %}
+      {% if pkg.excerpt %}<p class="excerpt">{{ pkg.excerpt }}</p>{% endif %}
+    </header>
+
+    {% if pkg.description and pkg.description != pkg.excerpt %}<p>{{ pkg.description }}</p>{% endif %}
+
+    <div class="table mt-6">
+      <table>
+        <tbody>
+          <tr>
+            <th>Repository</th>
+            <td><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">{{ repo.name }}</a> ({{ repo.manager }})</td>
+          </tr>
+          {% if pkg.pkg_base %}<tr><th>Source package</th><td><code>{{ pkg.pkg_base }}</code></td></tr>{% endif %}
+          {% if pkg.licenses | length > 0 %}
+          <tr>
+            <th>Licenses</th>
+            <td class="hstack">
+              {%- for l in pkg.licenses %}
+              <a class="badge outline" href="{{ filter_url | safe }}licenses={{ l | urlencode }}">{{ l }}</a>
+              {%- endfor %}
+              {%- if pkg.is_foss is defined and pkg.is_foss %}<span class="badge" data-variant="success">FOSS</span>{% endif %}
+            </td>
+          </tr>
+          {% endif %}
+          {% if pkg.platforms | length > 0 %}
+          <tr>
+            <th>Platforms</th>
+            <td class="hstack">
+              {%- for pf in pkg.platforms %}
+              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}platform={{ pf | urlencode }}">{{ pf }}</a>
+              {%- endfor %}
+            </td>
+          </tr>
+          {% endif %}
+          {% if pkg.groups | length > 0 %}<tr><th>Groups</th><td>{{ pkg.groups | join(sep=", ") }}</td></tr>{% endif %}
+          {% if pkg.keywords | length > 0 %}
+          <tr>
+            <th>Tags</th>
+            <td class="hstack">
+              {%- for k in pkg.keywords %}
+              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tags={{ k | urlencode }}">{{ k }}</a>
+              {%- endfor %}
+            </td>
+          </tr>
+          {% endif %}
+          {% if pkg.maintainers | length > 0 %}
+          <tr>
+            <th>Maintainers</th>
+            <td class="hstack">
+              {%- for m in pkg.maintainers %}
+              <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}">{{ m.name | default(value=m.handle) }}</a>
+              {%- endfor %}
+            </td>
+          </tr>
+          {% endif %}
+          {% if pkg.download_bytes %}<tr><th>Download size</th><td>{{ pkg.download_bytes | bytes }}</td></tr>{% endif %}
+          {% if pkg.installed_bytes %}<tr><th>Installed size</th><td>{{ pkg.installed_bytes | bytes }}</td></tr>{% endif %}
+          <tr><th>Built</th><td>{{ pkg.built_at | truncate(length=10, end="") }}</td></tr>
+          <tr><th>Updated</th><td>{{ pkg.updated_at | truncate(length=10, end="") }}</td></tr>
+          {%- for key, val in pkg.meta %}
+          <tr><th>{{ key | replace(from="_", to=" ") | capitalize }}</th><td>{{ val }}</td></tr>
+          {%- endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <aside class="col-3 offset-1">
+    <nav class="card vstack links" aria-label="Package links">
+      {% if pkg_url is defined %}<a href="{{ pkg_url }}" rel="noreferrer noopener">View in {{ repo.name }}</a>{% endif %}
+      {% if pkg.homepage_url %}<a href="{{ pkg.homepage_url }}" rel="noreferrer noopener">Homepage</a>{% endif %}
+      {% if pkg.repo_url %}<a href="{{ pkg.repo_url }}" rel="noreferrer noopener">Source repository</a>{% endif %}
+      {% if pkg.source_url %}<a href="{{ pkg.source_url }}" rel="noreferrer noopener">Source archive</a>{% endif %}
+    </nav>
+
+    <article class="card mt-4">
+      <h4>Install</h4>
+      <pre><code>{% if repo.manager == "nix" %}nix-env -iA nixpkgs.{{ pkg.slug }}{% elif repo.manager == "pacman" %}pacman -S {{ pkg.slug }}{% elif repo.manager == "aur" %}git clone https://aur.archlinux.org/{{ pkg.slug }}.git{% elif repo.manager == "apt" %}apt install {{ pkg.slug }}{% elif repo.manager == "apk" %}apk add {{ pkg.slug }}{% else %}{{ pkg.slug }}{% endif %}</code></pre>
+    </article>
+  </aside>
+</div>
+{% endblock %}

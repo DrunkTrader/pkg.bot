@@ -15,6 +15,10 @@ pub struct Cli {
     #[arg(long = "db", default_value = "data.db")]
     pub db_path: PathBuf,
 
+    /// Path to the site directory. If empty, only the HTTP API `/api/*`handlers are registered.
+    #[arg(long)]
+    pub site: Option<PathBuf>,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }

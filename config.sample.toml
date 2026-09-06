@@ -21,3 +21,12 @@ per_page = 20
 # The absolute maximum number of results to return per query in case the
 # per_page value above is overwritten from the frontend.
 max_per_page = 50
+
+
+[site_results]
+# Default number of packages to show per page on the website.
+per_page = 20
+
+# The absolute maximum number of results to show per page in case the
+# per_page value above is overwritten with a URL param.
+max_per_page = 50

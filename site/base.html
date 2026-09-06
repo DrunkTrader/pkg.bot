@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>{% block title %}pkgbot - Fast Linux package search{% endblock %}</title>
+  <meta name="description" content="{% block description %}Search packages across Linux distributions and package repositories.{% endblock %}" />
+
+  <link rel="icon" href="/static/favicon.svg?v={{ asset_ver }}" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/oat.min.css?v={{ asset_ver }}" type="text/css" />
+  <link rel="stylesheet" href="/static/style.css?v={{ asset_ver }}" type="text/css" />
+  <script defer src="/static/oat.min.js?v={{ asset_ver }}"></script>
+  <script defer src="/static/main.js?v={{ asset_ver }}"></script>
+</head>
+<body class="{{ page_type }}">
+<div class="container">
+  <header class="header">
+    <div class="row items-center">
+      <div class="logo col-3">
+        <a href="{{ consts.root_url | safe }}/" class="unstyled"><img src="/static/logo.svg?v={{ asset_ver }}" alt="pkg.bot logo" /></a>
+        <p class="tagline text-light">Fast Linux package search</p>
+      </div>
+
+      <div class="search col-9">
+        {% if repo is defined %}{% include "search-form.html" %}{% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer align-center text-light">
+  </footer>
+</div><!-- container -->
+</body>
+</html>

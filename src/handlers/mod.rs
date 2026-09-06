@@ -1,6 +1,7 @@
 pub mod packages;
+pub mod site;
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use axum::{
     http::StatusCode,
@@ -8,6 +9,7 @@ use axum::{
     Json,
 };
 use serde::Serialize;
+use tera::Tera;
 
 use crate::{manager::Manager, models::Repo};
 
@@ -19,7 +21,26 @@ pub struct Ctx {
     /// indexer only show up on the next restart.
     pub repos: Vec<Repo>,
 
+    /// HTML SSR site templates. `None` if the `--site` isn't set.
+    pub site: Option<Site>,
+
     pub consts: Consts,
+
+    /// Random string appended to static asset URLs for cache busting.
+    pub asset_ver: String,
+}
+
+impl Ctx {
+    /// Get a repo by its slug.
+    pub fn repo(&self, slug: &str) -> Option<&Repo> {
+        self.repos.iter().find(|r| r.slug == slug)
+    }
+}
+
+/// Server-rendered site loaded from the `--site` dir.
+pub struct Site {
+    pub tpl: Tera,
+    pub path: PathBuf,
 }
 
 /// Application constants.
@@ -30,6 +51,10 @@ pub struct Consts {
     // API pagination settings.
     pub api_default_per_page: i32,
     pub api_max_per_page: i32,
+
+    // Site pagination settings.
+    pub site_default_per_page: i32,
+    pub site_max_per_page: i32,
 }
 
 /// API response wrapper.

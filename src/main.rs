@@ -17,7 +17,7 @@ use std::sync::Arc;
 use clap::Parser;
 
 use cli::Commands;
-use handlers::{Consts, Ctx};
+use handlers::{Consts, Ctx, Site};
 use manager::Manager;
 
 #[tokio::main]
@@ -89,10 +89,21 @@ async fn main() {
     };
     log::info!("loaded {} repos", repos.len());
 
+    // Initialize the HTML site templates.
+    let site = cli.site.map(|path| {
+        let tpl = init::site_tpls(&path).unwrap_or_else(|e| {
+            log::error!("error loading templates from {}: {}", path.display(), e);
+            std::process::exit(1);
+        });
+
+        Site { tpl, path }
+    });
+
     // Setup the global app context used in HTTP handlers.
     let ctx = Arc::new(Ctx {
         mgr,
         repos,
+        site,
 
         // Global constants populated from config.
         consts: Consts {
@@ -100,7 +111,16 @@ async fn main() {
 
             api_default_per_page: config.api_results.per_page,
             api_max_per_page: config.api_results.max_per_page,
+
+            site_default_per_page: config.site_results.per_page,
+            site_max_per_page: config.site_results.max_per_page,
         },
+
+        // Random string for busting static asset caches.
+        asset_ver: format!(
+            "{:08}",
+            chrono::Local::now().timestamp_nanos_opt().unwrap_or(0) % 100_000_000
+        ),
     });
 
     // Start the HTTP server.

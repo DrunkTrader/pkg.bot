@@ -45,4 +45,3 @@ lazy_static! {
     pub static ref query_packages_all: String =
         format!("{}\n{}", q.cte_query_packages_all.query, q.query_packages.query);
 }
-
