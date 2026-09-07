@@ -208,13 +208,13 @@ pub struct PackageQuery {
     #[serde(default)]
     pub maintainer: String,
 
-    /// Keywords.
+    /// Keywords. Repeatable: `tag=x&tag=y`.
     #[serde(default)]
-    pub tags: Vec<String>,
+    pub tag: Vec<String>,
 
-    /// License SPDX IDs.
+    /// License SPDX IDs. Repeatable: `license=x&license=y`.
     #[serde(default)]
-    pub licenses: Vec<String>,
+    pub license: Vec<String>,
 
     /// Platforms.
     #[serde(default)]
@@ -261,8 +261,8 @@ impl PackageQuery {
     pub fn has_filters(&self) -> bool {
         !self.maintainer.is_empty()
             || !self.status.is_empty()
-            || !self.tags.is_empty()
-            || !self.licenses.is_empty()
+            || !self.tag.is_empty()
+            || !self.license.is_empty()
             || !self.platform.is_empty()
     }
 
@@ -281,6 +281,9 @@ pub struct PackageResults {
     pub packages: Vec<Package>,
     pub per_page: i32,
     pub total: i64,
+
+    /// Set when `total` hit the listing count limit and is really "total or more".
+    pub total_capped: bool,
 
     // Offset pagination (search).
     pub page: i32,

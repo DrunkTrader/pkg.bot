@@ -2,4 +2,4 @@ mod models;
 mod queries;
 
 pub use models::*;
-pub use queries::{get_packages_next, get_packages_prev, q, schema};
+pub use queries::{by_keyword, by_license, by_maintainer, by_name, q, schema, Listing};

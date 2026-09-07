@@ -44,7 +44,7 @@
             <th>Licenses</th>
             <td class="hstack">
               {%- for l in pkg.licenses %}
-              <a class="badge outline" href="{{ filter_url | safe }}licenses={{ l | urlencode }}">{{ l }}</a>
+              <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}">{{ l }}</a>
               {%- endfor %}
               {%- if pkg.is_foss is defined and pkg.is_foss %}<span class="badge" data-variant="success">FOSS</span>{% endif %}
             </td>
@@ -66,7 +66,7 @@
             <th>Tags</th>
             <td class="hstack">
               {%- for k in pkg.keywords %}
-              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tags={{ k | urlencode }}">{{ k }}</a>
+              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}">{{ k }}</a>
               {%- endfor %}
             </td>
           </tr>

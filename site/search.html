@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}{% if term %}{{ term }} &middot; {% endif %}{{ repo.name }} packages &mdash; pkgs{% endblock %}
-{% block description %}{{ results.total }} package{{ results.total | pluralize }}{% if term %} matching &quot;{{ term }}&quot;{% endif %} in {{ repo.name }}.{% endblock %}
+{% block description %}{{ results.total }}{% if results.total_capped %}+{% endif %} package{{ results.total | pluralize }}{% if term %} matching &quot;{{ term }}&quot;{% endif %} in {{ repo.name }}.{% endblock %}
 
 {% block content %}
 {# Prefix for links that filter the current search further. #}
@@ -12,7 +12,7 @@
 <div class="row">
   <div class="col-8 results">
     <p class="summary text-light">
-      <strong>{{ results.total | num }}</strong> package{{ results.total | pluralize }}
+      <strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}
       {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in {{ repo.name }}
     </p>
 
@@ -43,11 +43,11 @@
 
           <footer class="meta hstack text-light">
             {%- for l in p.licenses %}
-            <a class="badge outline" href="{{ filter_url | safe }}licenses={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
+            <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
             {%- endfor %}
 
             {%- for k in p.keywords | slice(end=4) %}
-            <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tags={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
+            <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
             {%- endfor %}
 
             {%- for m in p.maintainers | slice(end=2) %}

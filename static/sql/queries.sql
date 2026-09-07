@@ -14,19 +14,36 @@ FROM packages p
 INNER JOIN repos r ON r.id = p.repo_id
 WHERE p.repo_id = $1 AND p.slug = $2;
 
+-- name: filters
+-- $3: maintainer slug
+-- $4: tags (JSON array)
+-- $5: licenses (JSON array)
+-- $6: platforms (JSON array)
+-- $7: status
+  AND ($3 = '' OR EXISTS (
+      SELECT 1 FROM package_maintainers pm
+      INNER JOIN maintainers mt ON mt.id = pm.maintainer_id
+      WHERE pm.package_id = p.id AND mt.slug = $3
+  ))
+  AND ($4 = '[]' OR EXISTS (
+      SELECT 1 FROM JSON_EACH(p.keywords) k, JSON_EACH($4) qk WHERE k.value = qk.value
+  ))
+  AND ($5 = '[]' OR EXISTS (
+      SELECT 1 FROM JSON_EACH(p.licenses) l, JSON_EACH($5) ql WHERE l.value = ql.value
+  ))
+  AND ($6 = '[]' OR EXISTS (
+      SELECT 1 FROM JSON_EACH(p.platforms) pf, JSON_EACH($6) qf WHERE pf.value = qf.value
+  ))
+  AND ($7 = '' OR p.status = $7)
+
 -- name: get-packages
--- Alphabetical listing with keyset pagination. Both the ordering and the cursor
--- seek come off idx_packages_repo_name, so cost is independent of page depth.
--- {CMP} and {DIR} are substituted at load time to page forwards or backwards.
+-- Get (browse) packages alphabetically with keyset pagination.Alphabetical listing with keyset pagination, driven off packages itself.
 -- $1: repo_id
--- $2: maintainer slug
--- $3: tags (JSON array)
--- $4: licenses (JSON array)
--- $5: platforms (JSON array)
--- $6: status
--- $7: cursor name ('' for the first page)
--- $8: cursor id
--- $9: limit
+-- $2: unused here
+-- $3-$7: see `filters`
+-- $8: cursor name ('' for the first page)
+-- $9: cursor id
+-- $10: limit
 SELECT p.*, r.slug AS repo,
        (SELECT JSON_GROUP_ARRAY(JSON_OBJECT('slug', m.slug, 'handle', m.handle,
                                             'name', m.name, 'email', m.email, 'url', m.url))
@@ -36,46 +53,88 @@ SELECT p.*, r.slug AS repo,
 FROM packages p
 INNER JOIN repos r ON r.id = p.repo_id
 WHERE p.repo_id = $1
-  AND (p.name, p.id) {CMP} ($7, $8)
-  AND ($2 = '' OR EXISTS (
-      SELECT 1 FROM package_maintainers pm
-      INNER JOIN maintainers mt ON mt.id = pm.maintainer_id
-      WHERE pm.package_id = p.id AND mt.slug = $2
-  ))
-  AND ($3 = '[]' OR EXISTS (
-      SELECT 1 FROM JSON_EACH(p.keywords) k, JSON_EACH($3) qk WHERE k.value = qk.value
-  ))
-  AND ($4 = '[]' OR EXISTS (
-      SELECT 1 FROM JSON_EACH(p.licenses) l, JSON_EACH($4) ql WHERE l.value = ql.value
-  ))
-  AND ($5 = '[]' OR EXISTS (
-      SELECT 1 FROM JSON_EACH(p.platforms) pf, JSON_EACH($5) qf WHERE pf.value = qf.value
-  ))
-  AND ($6 = '' OR p.status = $6)
+  AND (p.name, p.id) {CMP} ($8, $9)
+{FILTERS}
 ORDER BY p.name {DIR}, p.id {DIR}
-LIMIT $9;
+LIMIT $10;
+
+-- name: get-packages-by-license
+-- $2: the license to page over. Params otherwise identical to get-packages.
+SELECT p.*, r.slug AS repo,
+       (SELECT JSON_GROUP_ARRAY(JSON_OBJECT('slug', m.slug, 'handle', m.handle,
+                                            'name', m.name, 'email', m.email, 'url', m.url))
+        FROM package_maintainers pm
+        INNER JOIN maintainers m ON m.id = pm.maintainer_id
+        WHERE pm.package_id = p.id) AS maintainers
+FROM package_licenses x
+INNER JOIN packages p ON p.id = x.package_id
+INNER JOIN repos r ON r.id = p.repo_id
+WHERE x.repo_id = $1 AND x.license = $2
+  AND (x.name, x.package_id) {CMP} ($8, $9)
+{FILTERS}
+ORDER BY x.name {DIR}, x.package_id {DIR}
+LIMIT $10;
+
+-- name: get-packages-by-keyword
+-- $2: the keyword to page over. Params otherwise identical to get-packages.
+SELECT p.*, r.slug AS repo,
+       (SELECT JSON_GROUP_ARRAY(JSON_OBJECT('slug', m.slug, 'handle', m.handle,
+                                            'name', m.name, 'email', m.email, 'url', m.url))
+        FROM package_maintainers pm
+        INNER JOIN maintainers m ON m.id = pm.maintainer_id
+        WHERE pm.package_id = p.id) AS maintainers
+FROM package_keywords x
+INNER JOIN packages p ON p.id = x.package_id
+INNER JOIN repos r ON r.id = p.repo_id
+WHERE x.repo_id = $1 AND x.keyword = $2
+  AND (x.name, x.package_id) {CMP} ($8, $9)
+{FILTERS}
+ORDER BY x.name {DIR}, x.package_id {DIR}
+LIMIT $10;
 
 -- name: count-packages
--- Total for a filtered listing. Unfiltered listings use repos.package_count instead.
--- $1-$6: same as get-packages.
-SELECT COUNT(*)
-FROM packages p
-WHERE p.repo_id = $1
-  AND ($2 = '' OR EXISTS (
-      SELECT 1 FROM package_maintainers pm
-      INNER JOIN maintainers mt ON mt.id = pm.maintainer_id
-      WHERE pm.package_id = p.id AND mt.slug = $2
-  ))
-  AND ($3 = '[]' OR EXISTS (
-      SELECT 1 FROM JSON_EACH(p.keywords) k, JSON_EACH($3) qk WHERE k.value = qk.value
-  ))
-  AND ($4 = '[]' OR EXISTS (
-      SELECT 1 FROM JSON_EACH(p.licenses) l, JSON_EACH($4) ql WHERE l.value = ql.value
-  ))
-  AND ($5 = '[]' OR EXISTS (
-      SELECT 1 FROM JSON_EACH(p.platforms) pf, JSON_EACH($5) qf WHERE pf.value = qf.value
-  ))
-  AND ($6 = '' OR p.status = $6);
+-- Total for a filtered listing, counted no further than $8 so that the cost is
+-- bounded; the caller reports anything beyond it as "$8+". Unfiltered listings
+-- read repos.package_count instead.
+-- $1-$7: see get-packages
+-- $8: count limit
+SELECT COUNT(*) FROM (
+    SELECT 1 FROM packages p
+    WHERE p.repo_id = $1
+    {FILTERS}
+    LIMIT $8
+);
+
+-- name: count-packages-by-license
+SELECT COUNT(*) FROM (
+    SELECT 1 FROM package_licenses x
+    INNER JOIN packages p ON p.id = x.package_id
+    WHERE x.repo_id = $1 AND x.license = $2
+    {FILTERS}
+    LIMIT $8
+);
+
+-- name: count-packages-by-keyword
+SELECT COUNT(*) FROM (
+    SELECT 1 FROM package_keywords x
+    INNER JOIN packages p ON p.id = x.package_id
+    WHERE x.repo_id = $1 AND x.keyword = $2
+    {FILTERS}
+    LIMIT $8
+);
+
+-- name: count-packages-by-maintainer
+-- Driven off package_maintainers. The listing itself pages over packages, but an
+-- exact count through the residual maintainer EXISTS would scan the whole repo.
+-- The maintainer slug is $3, so $2 goes unused here.
+SELECT COUNT(*) FROM (
+    SELECT 1 FROM package_maintainers pm
+    INNER JOIN maintainers mt ON mt.id = pm.maintainer_id
+    INNER JOIN packages p ON p.id = pm.package_id
+    WHERE p.repo_id = $1 AND mt.slug = $3
+    {FILTERS}
+    LIMIT $8
+);
 
 -- name: search-packages
 -- Rank and retrieve packages matching an FTS expression. Only ever run with a

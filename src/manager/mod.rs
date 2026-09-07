@@ -1,6 +1,8 @@
 use sqlx::sqlite::SqlitePool;
 
-use crate::models::{get_packages_next, get_packages_prev, q, Cursor, Package, PackageQuery, Repo};
+use crate::models::{
+    by_keyword, by_license, by_maintainer, by_name, q, Cursor, Listing, Package, PackageQuery, Repo,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -39,18 +41,15 @@ impl Manager {
         let back = !pq.before.is_empty();
         let cur = Cursor::parse(if back { &pq.before } else { &pq.after });
 
-        let sql: &str = if back {
-            &get_packages_prev
-        } else {
-            &get_packages_next
-        };
+        let (lst, drive) = driving_source(pq);
 
         // Fetch one extra row to detect whether there is another page after this.
-        let mut packages: Vec<Package> = sqlx::query_as(sql)
+        let mut packages: Vec<Package> = sqlx::query_as(if back { &lst.prev } else { &lst.next })
             .bind(pq.repo_id)
+            .bind(drive)
             .bind(&pq.maintainer)
-            .bind(to_json_list(&pq.tags))
-            .bind(to_json_list(&pq.licenses))
+            .bind(to_json_list(&pq.tag))
+            .bind(to_json_list(&pq.license))
             .bind(to_json_list(&pq.platform))
             .bind(&pq.status)
             .bind(&cur.name)
@@ -68,16 +67,24 @@ impl Manager {
         Ok((packages, has_more))
     }
 
-    pub async fn count_packages(&self, pq: &PackageQuery) -> Result<i64, Error> {
-        Ok(sqlx::query_scalar(&q.count_packages.query)
+    /// Total for a filtered listing, capped at [`MAX_COUNT`]. The bool reports
+    /// whether the cap was hit, making the total a lower bound.
+    pub async fn count_packages(&self, pq: &PackageQuery) -> Result<(i64, bool), Error> {
+        let (lst, drive) = driving_source(pq);
+
+        let n: i64 = sqlx::query_scalar(&lst.count)
             .bind(pq.repo_id)
+            .bind(drive)
             .bind(&pq.maintainer)
-            .bind(to_json_list(&pq.tags))
-            .bind(to_json_list(&pq.licenses))
+            .bind(to_json_list(&pq.tag))
+            .bind(to_json_list(&pq.license))
             .bind(to_json_list(&pq.platform))
             .bind(&pq.status)
+            .bind(MAX_COUNT + 1)
             .fetch_one(&self.db)
-            .await?)
+            .await?;
+
+        Ok((n.min(MAX_COUNT), n > MAX_COUNT))
     }
 
     pub async fn search_packages(&self, pq: &PackageQuery) -> Result<(Vec<Package>, i64), Error> {
@@ -91,8 +98,8 @@ impl Manager {
             .bind(&raw)
             .bind(&norm)
             .bind(&pq.maintainer)
-            .bind(to_json_list(&pq.tags))
-            .bind(to_json_list(&pq.licenses))
+            .bind(to_json_list(&pq.tag))
+            .bind(to_json_list(&pq.license))
             .bind(to_json_list(&pq.platform))
             .bind(&pq.status)
             .bind(if name_only { norm.as_str() } else { "" })
@@ -106,7 +113,32 @@ impl Manager {
     }
 }
 
+/// A filtered listing counts no further than this. An exact total means testing
+/// every package in the repo, which no index can avoid for the JSON filters.
+pub const MAX_COUNT: i64 = 1000;
+
 const PREFIX_MIN_LEN: usize = 3;
+
+/// Pick which table the listing pages over. A single license or tag can seek its
+/// own side table, which carries the name sort key; several values can't, as the
+/// index only orders within one value.
+fn driving_source(pq: &PackageQuery) -> (&'static Listing, &str) {
+    match (values(&pq.license).as_slice(), values(&pq.tag).as_slice()) {
+        ([license], _) => (&by_license, license),
+        (_, [keyword]) => (&by_keyword, keyword),
+        _ if !pq.maintainer.is_empty() => (&by_maintainer, ""),
+        _ => (&by_name, ""),
+    }
+}
+
+/// Flatten repeated and/or comma separated filter values. Eg: ["a, b", "c"] => [a, b, c]
+fn values(vals: &[String]) -> Vec<&str> {
+    vals.iter()
+        .flat_map(|v| v.split(','))
+        .map(str::trim)
+        .filter(|i| !i.is_empty())
+        .collect()
+}
 
 /// Convert a raw search string into an FTS5 expression, ANDing all terms. The
 /// last term becomes a prefix query so a query matches while it is being typed.
@@ -147,13 +179,7 @@ fn norm_name(s: &str) -> String {
         .collect()
 }
 
-/// Convert repeated and/or comma separated values into a JSON array for JSON_EACH().
+/// Filter values as a JSON array for JSON_EACH().
 fn to_json_list(vals: &[String]) -> String {
-    let items: Vec<&str> = vals
-        .iter()
-        .flat_map(|v| v.split(','))
-        .map(str::trim)
-        .filter(|i| !i.is_empty())
-        .collect();
-    serde_json::to_string(&items).unwrap_or_else(|_| "[]".to_string())
+    serde_json::to_string(&values(vals)).unwrap_or_else(|_| "[]".to_string())
 }

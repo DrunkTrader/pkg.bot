@@ -115,6 +115,29 @@ CREATE TABLE IF NOT EXISTS package_maintainers (
 ) STRICT, WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS idx_pkg_maintainers ON package_maintainers (maintainer_id, package_id);
 
+-- licenses and keywords flattened out of their JSON array columns. The
+-- (repo_id, value, name, package_id) key lets a filtered listing seek straight
+-- to its page and stay in name order, which a JSON array column cannot do.
+CREATE TABLE IF NOT EXISTS package_licenses (
+    repo_id           INTEGER NOT NULL,
+    license           TEXT    NOT NULL,
+    name              TEXT    NOT NULL,
+    package_id        INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+
+    PRIMARY KEY (repo_id, license, name, package_id)
+) STRICT, WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_package_licenses_pkg ON package_licenses (package_id);
+
+CREATE TABLE IF NOT EXISTS package_keywords (
+    repo_id           INTEGER NOT NULL,
+    keyword           TEXT    NOT NULL,
+    name              TEXT    NOT NULL,
+    package_id        INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+
+    PRIMARY KEY (repo_id, keyword, name, package_id)
+) STRICT, WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_package_keywords_pkg ON package_keywords (package_id);
+
 -- FTS.
 -- packages_fts
 CREATE VIRTUAL TABLE IF NOT EXISTS packages_fts USING fts5 (
@@ -145,6 +168,30 @@ BEGIN
     DELETE FROM packages_fts WHERE rowid = OLD.id;
 
     INSERT INTO packages_fts (rowid, tokens) VALUES (NEW.id, NEW.tokens);
+END;
+
+-- Keep the flattened license/keyword tables in sync with rows in packages.
+-- Deletes are handled by ON DELETE CASCADE.
+CREATE TRIGGER IF NOT EXISTS trg_packages_facets_after_insert AFTER INSERT ON packages
+BEGIN
+    INSERT OR IGNORE INTO package_licenses (repo_id, license, name, package_id)
+        SELECT NEW.repo_id, l.value, NEW.name, NEW.id FROM JSON_EACH(NEW.licenses) l;
+
+    INSERT OR IGNORE INTO package_keywords (repo_id, keyword, name, package_id)
+        SELECT NEW.repo_id, k.value, NEW.name, NEW.id FROM JSON_EACH(NEW.keywords) k;
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_packages_facets_after_update
+AFTER UPDATE OF repo_id, name, licenses, keywords ON packages
+BEGIN
+    DELETE FROM package_licenses WHERE package_id = OLD.id;
+    DELETE FROM package_keywords WHERE package_id = OLD.id;
+
+    INSERT OR IGNORE INTO package_licenses (repo_id, license, name, package_id)
+        SELECT NEW.repo_id, l.value, NEW.name, NEW.id FROM JSON_EACH(NEW.licenses) l;
+
+    INSERT OR IGNORE INTO package_keywords (repo_id, keyword, name, package_id)
+        SELECT NEW.repo_id, k.value, NEW.name, NEW.id FROM JSON_EACH(NEW.keywords) k;
 END;
 
 -- maintainers_fts

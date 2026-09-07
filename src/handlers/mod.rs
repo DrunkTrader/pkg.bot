@@ -124,6 +124,7 @@ pub async fn list_packages(ctx: &Ctx, repo: &Repo, q: &PackageQuery) -> Result<P
             packages,
             per_page: q.limit,
             total,
+            total_capped: false,
             page: q.page,
             total_pages: total_pages(total, q.limit),
             next: None,
@@ -132,10 +133,10 @@ pub async fn list_packages(ctx: &Ctx, repo: &Repo, q: &PackageQuery) -> Result<P
     }
 
     let (packages, has_more) = ctx.mgr.get_packages(q).await?;
-    let total = if q.has_filters() {
+    let (total, total_capped) = if q.has_filters() {
         ctx.mgr.count_packages(q).await?
     } else {
-        repo.package_count
+        (repo.package_count, false)
     };
 
     // Keyset pagination.
@@ -156,6 +157,7 @@ pub async fn list_packages(ctx: &Ctx, repo: &Repo, q: &PackageQuery) -> Result<P
         packages,
         per_page: q.limit,
         total,
+        total_capped,
         page: 0,
         total_pages: 0,
         next,

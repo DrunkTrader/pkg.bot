@@ -34,13 +34,13 @@
 
       <label data-field>
         Tags
-        <input type="text" name="tags" value="{{ q.tags | join(sep=', ') }}" placeholder="eg: editor, vim" />
+        <input type="text" name="tag" value="{{ q.tag | join(sep=', ') }}" placeholder="eg: editor, vim" />
         <small data-hint>Comma separated keywords.</small>
       </label>
 
       <label data-field>
         Licenses
-        <input type="text" name="licenses" value="{{ q.licenses | join(sep=', ') }}" placeholder="eg: MIT, Apache-2.0" />
+        <input type="text" name="license" value="{{ q.license | join(sep=', ') }}" placeholder="eg: MIT, Apache-2.0" />
         <small data-hint>Comma separated SPDX IDs.</small>
       </label>
 
