@@ -4,11 +4,11 @@
   --radius-full: 3px;
   --radius-medium: 3px;
   --input: light-dark(#999, #333);
-  --background: light-dark(#fbfbfb, #111);
 }
 
 body {
   min-width: 320px;
+  background: light-dark(#fbfbfb, #111);
 }
 
 .icon {
@@ -115,6 +115,10 @@ body.index {
 }
 
 /* Search results */
+.results {
+  min-width: 0;
+}
+
 .summary {
   font-size: var(--text-7);
   margin-bottom: var(--space-4);
@@ -137,6 +141,27 @@ body.index {
   header {
     align-items: baseline;
   }
+
+  header > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  h3,
+  .slug,
+  .badge,
+  .meta > * {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .slug, .badge, .meta > * {
+    max-width: 30ch;
+  }
 }
 
 .slug,
@@ -148,7 +173,7 @@ body.index {
   font-size: var(--text-7);
 }
 
-.meta {
+footer {
   margin-top: var(--space-3);
   font-size: var(--text-8);
   gap: var(--space-2);

@@ -41,20 +41,22 @@
             {%- endif -%}
           </p>
 
-          <footer class="meta hstack text-light">
-            {%- for l in p.licenses %}
-            <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
-            {%- endfor %}
+          <footer class="hstack justify-between text-light">
+            <div class="hstack meta">
+              {%- for l in p.licenses %}
+              <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
+              {%- endfor %}
 
-            {%- for k in p.keywords | slice(end=4) %}
-            <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
-            {%- endfor %}
+              {%- for k in p.keywords | slice(end=4) %}
+              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
+              {%- endfor %}
 
-            {%- for m in p.maintainers | slice(end=2) %}
-            <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer">{{ m.name | default(value=m.handle) }}</a>
-            {%- endfor %}
+              {%- for m in p.maintainers | slice(end=2) %}
+              <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer">{{ m.name | default(value=m.handle) }}</a>
+              {%- endfor %}
 
-            {%- if p.installed_bytes %}<span>{{ p.installed_bytes | bytes }}</span>{% endif %}
+              {%- if p.installed_bytes %}<span>{{ p.installed_bytes | bytes }}</span>{% endif %}
+            </div>
             <span>Updated {{ p.updated_at | truncate(length=10, end="") }}</span>
           </footer>
         </li>
