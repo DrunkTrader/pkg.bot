@@ -118,15 +118,15 @@ pub type Result<T> = std::result::Result<T, ApiErr>;
 /// Fetch a page of packages.
 pub async fn list_packages(ctx: &Ctx, repo: &Repo, q: &PackageQuery) -> Result<PackageResults> {
     if !q.search().0.is_empty() {
-        let (packages, total) = ctx.mgr.search_packages(q).await?;
+        let (packages, has_more) = ctx.mgr.search_packages(q).await?;
 
         return Ok(PackageResults {
             packages,
             per_page: q.limit,
-            total,
+            total: None,
             total_capped: false,
             page: q.page,
-            total_pages: total_pages(total, q.limit),
+            has_more,
             next: None,
             prev: None,
         });
@@ -156,10 +156,10 @@ pub async fn list_packages(ctx: &Ctx, repo: &Repo, q: &PackageQuery) -> Result<P
     Ok(PackageResults {
         packages,
         per_page: q.limit,
-        total,
+        total: Some(total),
         total_capped,
         page: 0,
-        total_pages: 0,
+        has_more,
         next,
         prev,
     })
@@ -182,8 +182,4 @@ pub fn paginate(
     };
     let offset = (page - 1) * per_page;
     (page, per_page, offset)
-}
-
-pub fn total_pages(total: i64, per_page: i32) -> i32 {
-    ((total as f64) / (per_page as f64)).ceil() as i32
 }

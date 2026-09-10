@@ -1,7 +1,7 @@
 use sqlx::sqlite::SqlitePool;
 
 use crate::models::{
-    by_keyword, by_license, by_maintainer, by_name, q, Cursor, Listing, Package, PackageQuery, Repo,
+    Cursor, Listing, Package, PackageQuery, Repo, BY_FACET, BY_NAME, Q, SEARCH_PACKAGES,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -22,13 +22,13 @@ impl Manager {
     }
 
     pub async fn get_repos(&self) -> Result<Vec<Repo>, Error> {
-        Ok(sqlx::query_as(&q.get_repos.query)
+        Ok(sqlx::query_as(&Q.get_repos.query)
             .fetch_all(&self.db)
             .await?)
     }
 
     pub async fn get_package(&self, repo_id: i64, slug: &str) -> Result<Package, Error> {
-        sqlx::query_as(&q.get_package.query)
+        sqlx::query_as(&Q.get_package.query)
             .bind(repo_id)
             .bind(slug)
             .fetch_optional(&self.db)
@@ -41,17 +41,18 @@ impl Manager {
         let back = !pq.before.is_empty();
         let cur = Cursor::parse(if back { &pq.before } else { &pq.after });
 
-        let (lst, drive) = driving_source(pq);
+        let Some(plan) = self.plan(pq).await? else {
+            return Ok((vec![], false));
+        };
 
         // Fetch one extra row to detect whether there is another page after this.
-        let mut packages: Vec<Package> = sqlx::query_as(if back { &lst.prev } else { &lst.next })
+        let sql = if back { &plan.lst.prev } else { &plan.lst.next };
+        let mut packages: Vec<Package> = sqlx::query_as(sql)
             .bind(pq.repo_id)
-            .bind(drive)
-            .bind(&pq.maintainer)
-            .bind(to_json_list(&pq.tag))
-            .bind(to_json_list(&pq.license))
-            .bind(to_json_list(&pq.platform))
-            .bind(&pq.status)
+            .bind(&plan.kind)
+            .bind(&plan.value)
+            .bind(&plan.residual)
+            .bind(pq.platform.trim())
             .bind(&cur.name)
             .bind(cur.id)
             .bind(pq.limit + 1)
@@ -67,19 +68,35 @@ impl Manager {
         Ok((packages, has_more))
     }
 
-    /// Total for a filtered listing, capped at [`MAX_COUNT`]. The bool reports
-    /// whether the cap was hit, making the total a lower bound.
+    /// Use the saved count for a single filter; otherwise count up to [`MAX_COUNT`].
+    /// The bool is true when there are more matches than the limit.
     pub async fn count_packages(&self, pq: &PackageQuery) -> Result<(i64, bool), Error> {
-        let (lst, drive) = driving_source(pq);
+        let Some(plan) = self.plan(pq).await? else {
+            return Ok((0, false));
+        };
 
-        let n: i64 = sqlx::query_scalar(&lst.count)
+        if plan.residual == "[]" && pq.platform.trim().is_empty() && !plan.kind.is_empty() {
+            let exact: Option<i64> = sqlx::query_scalar(
+                "SELECT package_count FROM facet_counts
+                 WHERE repo_id = $1 AND kind = $2 AND value = $3",
+            )
             .bind(pq.repo_id)
-            .bind(drive)
-            .bind(&pq.maintainer)
-            .bind(to_json_list(&pq.tag))
-            .bind(to_json_list(&pq.license))
-            .bind(to_json_list(&pq.platform))
-            .bind(&pq.status)
+            .bind(&plan.kind)
+            .bind(&plan.value)
+            .fetch_optional(&self.db)
+            .await?;
+
+            if let Some(n) = exact {
+                return Ok((n, false));
+            }
+        }
+
+        let n: i64 = sqlx::query_scalar(&plan.lst.count)
+            .bind(pq.repo_id)
+            .bind(&plan.kind)
+            .bind(&plan.value)
+            .bind(&plan.residual)
+            .bind(pq.platform.trim())
             .bind(MAX_COUNT + 1)
             .fetch_one(&self.db)
             .await?;
@@ -87,29 +104,80 @@ impl Manager {
         Ok((n.min(MAX_COUNT), n > MAX_COUNT))
     }
 
-    pub async fn search_packages(&self, pq: &PackageQuery) -> Result<(Vec<Package>, i64), Error> {
+    /// Start with the filter matching the fewest packages, then check the others.
+    /// Return `None` if any filter has no matches in this repository.
+    async fn plan(&self, pq: &PackageQuery) -> Result<Option<Plan>, Error> {
+        let wanted = pq.facets();
+        if wanted.is_empty() {
+            return Ok(Some(Plan::default()));
+        }
+
+        let drive: Option<(String, String, i64)> = sqlx::query_as(&Q.pick_facet.query)
+            .bind(pq.repo_id)
+            .bind(to_facet_json(&wanted))
+            .fetch_optional(&self.db)
+            .await?;
+
+        let Some((kind, value, matched)) = drive else {
+            return Ok(None);
+        };
+        if matched < wanted.len() as i64 {
+            return Ok(None);
+        }
+
+        let rest: Vec<(&str, &str)> = wanted
+            .into_iter()
+            .filter(|(k, v)| *k != kind || *v != value)
+            .collect();
+
+        Ok(Some(Plan {
+            lst: &BY_FACET,
+            residual: to_facet_json(&rest),
+            kind,
+            value,
+        }))
+    }
+
+    pub async fn search_packages(&self, pq: &PackageQuery) -> Result<(Vec<Package>, bool), Error> {
         let (term, name_only) = pq.search();
         let raw = term.to_lowercase();
         let norm = norm_name(term);
+        let wanted = pq.facets();
 
-        let packages: Vec<Package> = sqlx::query_as(&q.search_packages.query)
+        let mut packages: Vec<Package> = sqlx::query_as(&SEARCH_PACKAGES)
             .bind(pq.repo_id)
-            .bind(to_fts_query(term))
+            .bind(to_fts_query(term, pq.repo_id, name_only))
             .bind(&raw)
             .bind(&norm)
-            .bind(&pq.maintainer)
-            .bind(to_json_list(&pq.tag))
-            .bind(to_json_list(&pq.license))
-            .bind(to_json_list(&pq.platform))
-            .bind(&pq.status)
-            .bind(if name_only { norm.as_str() } else { "" })
+            .bind(to_facet_json(&wanted))
+            .bind(pq.platform.trim())
             .bind(pq.offset)
-            .bind(pq.limit)
+            .bind(pq.limit + 1)
             .fetch_all(&self.db)
             .await?;
 
-        let total = packages.first().map(|p| p.total).unwrap_or(0);
-        Ok((packages, total))
+        let has_more = packages.len() > pq.limit as usize;
+        packages.truncate(pq.limit as usize);
+        Ok((packages, has_more))
+    }
+}
+
+/// The table to browse and the filters to apply.
+struct Plan {
+    lst: &'static Listing,
+    kind: String,
+    value: String,
+    residual: String,
+}
+
+impl Default for Plan {
+    fn default() -> Self {
+        Self {
+            lst: &BY_NAME,
+            kind: String::new(),
+            value: String::new(),
+            residual: "[]".into(),
+        }
     }
 }
 
@@ -119,31 +187,9 @@ pub const MAX_COUNT: i64 = 1000;
 
 const PREFIX_MIN_LEN: usize = 3;
 
-/// Pick which table the listing pages over. A single license or tag can seek its
-/// own side table, which carries the name sort key; several values can't, as the
-/// index only orders within one value.
-fn driving_source(pq: &PackageQuery) -> (&'static Listing, &str) {
-    match (values(&pq.license).as_slice(), values(&pq.tag).as_slice()) {
-        ([license], _) => (&by_license, license),
-        (_, [keyword]) => (&by_keyword, keyword),
-        _ if !pq.maintainer.is_empty() => (&by_maintainer, ""),
-        _ => (&by_name, ""),
-    }
-}
-
-/// Flatten repeated and/or comma separated filter values. Eg: ["a, b", "c"] => [a, b, c]
-fn values(vals: &[String]) -> Vec<&str> {
-    vals.iter()
-        .flat_map(|v| v.split(','))
-        .map(str::trim)
-        .filter(|i| !i.is_empty())
-        .collect()
-}
-
-/// Convert a raw search string into an FTS5 expression, ANDing all terms. The
-/// last term becomes a prefix query so a query matches while it is being typed.
-/// Eg: ("foo-bar") => '("foo" AND "bar" *)'
-fn to_fts_query(query: &str) -> String {
+/// Build an FTS5 query that matches every search term in the requested fields and repo.
+/// Allow prefix matches on the last term if it is long enough.
+fn to_fts_query(query: &str, repo_id: i64, name_only: bool) -> String {
     let terms: Vec<String> = query
         .split(|c: char| !c.is_alphanumeric())
         .filter(|t| !t.is_empty())
@@ -167,7 +213,17 @@ fn to_fts_query(query: &str) -> String {
         })
         .collect();
 
-    format!("({})", terms.join(" AND "))
+    let fields = if name_only {
+        "identity"
+    } else {
+        "{identity keywords body}"
+    };
+    let tokens = format!("{fields} : ({})", terms.join(" AND "));
+    if repo_id > 0 {
+        format!("repo : {repo_id} AND {tokens}")
+    } else {
+        tokens
+    }
 }
 
 /// Mirrors the transform the indexer applies to `packages.name_norm` so that
@@ -179,7 +235,11 @@ fn norm_name(s: &str) -> String {
         .collect()
 }
 
-/// Filter values as a JSON array for JSON_EACH().
-fn to_json_list(vals: &[String]) -> String {
-    serde_json::to_string(&values(vals)).unwrap_or_else(|_| "[]".to_string())
+/// Encode filters for SQL, e.g. [{"k":"license","v":"MIT"}].
+fn to_facet_json(pairs: &[(&str, &str)]) -> String {
+    let objs: Vec<_> = pairs
+        .iter()
+        .map(|(k, v)| serde_json::json!({"k": k, "v": v}))
+        .collect();
+    serde_json::to_string(&objs).unwrap_or_else(|_| "[]".to_string())
 }

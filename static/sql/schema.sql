@@ -63,8 +63,10 @@ CREATE TABLE IF NOT EXISTS packages (
     "groups"          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid("groups")),
     keywords          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(keywords)),
 
-    -- Deduplicated tokens from name, slug, excerpt, description, groups, keywords.
-    tokens            TEXT,
+    -- Remove duplicate search tokens from each field before saving.
+    identity_tokens   TEXT,
+    keyword_tokens    TEXT,
+    body_tokens       TEXT,
 
     status            TEXT    NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'broken', 'outdated', 'deleted')),
     download_bytes    INTEGER,
@@ -83,9 +85,6 @@ CREATE TABLE IF NOT EXISTS packages (
 
 CREATE INDEX IF NOT EXISTS idx_packages_name      ON packages (name);
 CREATE INDEX IF NOT EXISTS idx_packages_repo_name ON packages (repo_id, name);
-CREATE INDEX IF NOT EXISTS idx_packages_name_norm ON packages (name_norm);
-CREATE INDEX IF NOT EXISTS idx_packages_pkg_base  ON packages (repo_id, pkg_base) WHERE pkg_base IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_packages_hash      ON packages (repo_id, hash);
 
 -- maintainers
 CREATE TABLE IF NOT EXISTS maintainers (
@@ -104,7 +103,7 @@ CREATE TABLE IF NOT EXISTS maintainers (
     UNIQUE (repo_id, slug)
 ) STRICT;
 
-CREATE INDEX IF NOT EXISTS idx_maintainers_slug ON maintainers (slug) WHERE slug IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_maintainers_slug ON maintainers (slug);
 
 
 CREATE TABLE IF NOT EXISTS package_maintainers (
@@ -115,34 +114,38 @@ CREATE TABLE IF NOT EXISTS package_maintainers (
 ) STRICT, WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS idx_pkg_maintainers ON package_maintainers (maintainer_id, package_id);
 
--- licenses and keywords flattened out of their JSON array columns. The
--- (repo_id, value, name, package_id) key lets a filtered listing seek straight
--- to its page and stay in name order, which a JSON array column cannot do.
-CREATE TABLE IF NOT EXISTS package_licenses (
+-- Store common filter values as separate rows for faster lookups.
+-- Rebuild these in the same transaction as package updates.
+CREATE TABLE IF NOT EXISTS package_facets (
     repo_id           INTEGER NOT NULL,
-    license           TEXT    NOT NULL,
-    name              TEXT    NOT NULL,
+    kind              TEXT    NOT NULL, -- 'license', 'tag', 'maintainer', 'group', 'status', 'is_foss'
+    value             TEXT    NOT NULL,
+    name              TEXT    NOT NULL, -- Copy of packages.name for sorting
     package_id        INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
 
-    PRIMARY KEY (repo_id, license, name, package_id)
+    PRIMARY KEY (repo_id, kind, value, name, package_id)
 ) STRICT, WITHOUT ROWID;
-CREATE INDEX IF NOT EXISTS idx_package_licenses_pkg ON package_licenses (package_id);
 
-CREATE TABLE IF NOT EXISTS package_keywords (
+CREATE INDEX IF NOT EXISTS idx_facets_pkg ON package_facets (package_id, kind, value);
+
+-- Package count per facet value.
+CREATE TABLE IF NOT EXISTS facet_counts (
     repo_id           INTEGER NOT NULL,
-    keyword           TEXT    NOT NULL,
-    name              TEXT    NOT NULL,
-    package_id        INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+    kind              TEXT    NOT NULL,
+    value             TEXT    NOT NULL,
+    package_count     INTEGER NOT NULL,
 
-    PRIMARY KEY (repo_id, keyword, name, package_id)
+    PRIMARY KEY (repo_id, kind, value)
 ) STRICT, WITHOUT ROWID;
-CREATE INDEX IF NOT EXISTS idx_package_keywords_pkg ON package_keywords (package_id);
 
 -- FTS.
 -- packages_fts
 CREATE VIRTUAL TABLE IF NOT EXISTS packages_fts USING fts5 (
     -- SQLite's built in rowid is used as the primary key to reference packages.id
-    tokens,
+    identity,
+    keywords,
+    body,
+    repo,
 
     -- This is sqlite's `content` keyword. Setting this to ''
     -- avoids text content being duplicated in the fts table.
@@ -154,7 +157,8 @@ CREATE VIRTUAL TABLE IF NOT EXISTS packages_fts USING fts5 (
 -- Keep the fts table in sync with rows in packages.
 CREATE TRIGGER IF NOT EXISTS trg_packages_after_insert AFTER INSERT ON packages
 BEGIN
-    INSERT INTO packages_fts (rowid, tokens) VALUES (NEW.id, NEW.tokens);
+    INSERT INTO packages_fts (rowid, identity, keywords, body, repo)
+    VALUES (NEW.id, NEW.identity_tokens, NEW.keyword_tokens, NEW.body_tokens, NEW.repo_id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_packages_after_delete AFTER DELETE ON packages
@@ -163,64 +167,10 @@ BEGIN
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_packages_after_update
-AFTER UPDATE OF tokens ON packages
+AFTER UPDATE OF identity_tokens, keyword_tokens, body_tokens, repo_id ON packages
 BEGIN
     DELETE FROM packages_fts WHERE rowid = OLD.id;
 
-    INSERT INTO packages_fts (rowid, tokens) VALUES (NEW.id, NEW.tokens);
-END;
-
--- Keep the flattened license/keyword tables in sync with rows in packages.
--- Deletes are handled by ON DELETE CASCADE.
-CREATE TRIGGER IF NOT EXISTS trg_packages_facets_after_insert AFTER INSERT ON packages
-BEGIN
-    INSERT OR IGNORE INTO package_licenses (repo_id, license, name, package_id)
-        SELECT NEW.repo_id, l.value, NEW.name, NEW.id FROM JSON_EACH(NEW.licenses) l;
-
-    INSERT OR IGNORE INTO package_keywords (repo_id, keyword, name, package_id)
-        SELECT NEW.repo_id, k.value, NEW.name, NEW.id FROM JSON_EACH(NEW.keywords) k;
-END;
-
-CREATE TRIGGER IF NOT EXISTS trg_packages_facets_after_update
-AFTER UPDATE OF repo_id, name, licenses, keywords ON packages
-BEGIN
-    DELETE FROM package_licenses WHERE package_id = OLD.id;
-    DELETE FROM package_keywords WHERE package_id = OLD.id;
-
-    INSERT OR IGNORE INTO package_licenses (repo_id, license, name, package_id)
-        SELECT NEW.repo_id, l.value, NEW.name, NEW.id FROM JSON_EACH(NEW.licenses) l;
-
-    INSERT OR IGNORE INTO package_keywords (repo_id, keyword, name, package_id)
-        SELECT NEW.repo_id, k.value, NEW.name, NEW.id FROM JSON_EACH(NEW.keywords) k;
-END;
-
--- maintainers_fts
-CREATE VIRTUAL TABLE IF NOT EXISTS maintainers_fts USING fts5 (
-    -- SQLite's built in rowid is used as the primary key to reference maintainers.id
-    handle,
-    name,
-    email,
-    content='',
-    contentless_delete=1
-);
-
--- Keep the fts table in sync with rows in maintainers.
-CREATE TRIGGER IF NOT EXISTS trg_maintainers_after_insert AFTER INSERT ON maintainers
-BEGIN
-    INSERT INTO maintainers_fts (rowid, handle, name, email)
-    VALUES (NEW.id, NEW.handle, NEW.name, NEW.email);
-END;
-
-CREATE TRIGGER IF NOT EXISTS trg_maintainers_after_delete AFTER DELETE ON maintainers
-BEGIN
-    DELETE FROM maintainers_fts WHERE rowid = OLD.id;
-END;
-
-CREATE TRIGGER IF NOT EXISTS trg_maintainers_after_update
-AFTER UPDATE OF handle, name, email ON maintainers
-BEGIN
-    DELETE FROM maintainers_fts WHERE rowid = OLD.id;
-
-    INSERT INTO maintainers_fts (rowid, handle, name, email)
-    VALUES (NEW.id, NEW.handle, NEW.name, NEW.email);
+    INSERT INTO packages_fts (rowid, identity, keywords, body, repo)
+    VALUES (NEW.id, NEW.identity_tokens, NEW.keyword_tokens, NEW.body_tokens, NEW.repo_id);
 END;

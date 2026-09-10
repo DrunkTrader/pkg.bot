@@ -5,46 +5,11 @@
     <li><a {% if results.next %}href="{{ pg_url | safe }}after={{ results.next | urlencode }}"{% else %}aria-disabled="true"{% endif %} class="button outline small">Next &rarr;</a></li>
   </menu>
 </nav>
-{% elif results.total_pages > 1 %}
-{% set page = results.page %}
-{% set total_pages = results.total_pages %}
-{% set window = 10 %}
-
-{% set_global start = page - 5 %}
-{% set_global end = start + window - 1 %}
-{% if start < 1 %}
-  {% set_global start = 1 %}
-  {% set_global end = window %}
-{% endif %}
-{% if end > total_pages %}
-  {% set_global end = total_pages %}
-  {% set_global start = total_pages - window + 1 %}
-  {% if start < 1 %}{% set_global start = 1 %}{% endif %}
-{% endif %}
-
+{% elif results.page > 1 or results.has_more %}
 <nav class="pagination align-center mt-6" aria-label="Pagination">
   <menu class="buttons">
-    <li><a {% if page > 1 %}href="{{ pg_url | safe }}page={{ page - 1 }}"{% else %}aria-disabled="true"{% endif %} class="button outline small">&larr; Previous</a></li>
-
-    {% if start > 1 %}
-      <li><a href="{{ pg_url | safe }}page=1" class="button outline small">1</a></li>
-      {% if start > 2 %}<li><a class="button outline small" aria-disabled="true">&hellip;</a></li>{% endif %}
-    {% endif %}
-
-    {% for p in range(start=start, end=end + 1) %}
-      {% if p == page %}
-        <li><a class="button small" aria-current="page">{{ p }}</a></li>
-      {% else %}
-        <li><a href="{{ pg_url | safe }}page={{ p }}" class="button outline small">{{ p }}</a></li>
-      {% endif %}
-    {% endfor %}
-
-    {% if end < total_pages %}
-      {% if end < total_pages - 1 %}<li><a class="button outline small" aria-disabled="true">&hellip;</a></li>{% endif %}
-      <li><a href="{{ pg_url | safe }}page={{ total_pages }}" class="button outline small">{{ total_pages }}</a></li>
-    {% endif %}
-
-    <li><a {% if page < total_pages %}href="{{ pg_url | safe }}page={{ page + 1 }}"{% else %}aria-disabled="true"{% endif %} class="button outline small">Next &rarr;</a></li>
+    <li><a {% if results.page > 1 %}href="{{ pg_url | safe }}page={{ results.page - 1 }}"{% else %}aria-disabled="true"{% endif %} class="button outline small">&larr; Previous</a></li>
+    <li><a {% if results.has_more %}href="{{ pg_url | safe }}page={{ results.page + 1 }}"{% else %}aria-disabled="true"{% endif %} class="button outline small">Next &rarr;</a></li>
   </menu>
 </nav>
 {% endif %}

@@ -1,4 +1,4 @@
-use lazy_static::lazy_static;
+use std::sync::LazyLock;
 use yesqlr_macros::ScanQueries;
 
 const SQL_SCHEMA: &[u8] = include_bytes!("../../static/sql/schema.sql");
@@ -16,78 +16,86 @@ pub struct Schema {
 pub struct Queries {
     #[name = "get-repos"]
     pub get_repos: yesqlr::Query,
+
     #[name = "get-package"]
     pub get_package: yesqlr::Query,
+
     #[name = "filters"]
     pub filters: yesqlr::Query,
+
+    #[name = "pick-facet"]
+    pub pick_facet: yesqlr::Query,
+
     #[name = "get-packages"]
     pub get_packages: yesqlr::Query,
-    #[name = "get-packages-by-license"]
-    pub get_packages_by_license: yesqlr::Query,
-    #[name = "get-packages-by-keyword"]
-    pub get_packages_by_keyword: yesqlr::Query,
+
+    #[name = "get-packages-by-facet"]
+    pub get_packages_by_facet: yesqlr::Query,
+
     #[name = "count-packages"]
     pub count_packages: yesqlr::Query,
-    #[name = "count-packages-by-license"]
-    pub count_packages_by_license: yesqlr::Query,
-    #[name = "count-packages-by-keyword"]
-    pub count_packages_by_keyword: yesqlr::Query,
-    #[name = "count-packages-by-maintainer"]
-    pub count_packages_by_maintainer: yesqlr::Query,
+
+    #[name = "count-packages-by-facet"]
+    pub count_packages_by_facet: yesqlr::Query,
+
     #[name = "search-packages"]
     pub search_packages: yesqlr::Query,
 }
 
-/// One driving source for a listing, pre-composed for paging either way.
+/// A listing source, pre-composed for paging either way plus its capped count.
 pub struct Listing {
     pub next: String,
     pub prev: String,
     pub count: String,
 }
 
-lazy_static! {
-    pub static ref schema: Schema = {
-        let result = yesqlr::parse(SQL_SCHEMA).expect("error parsing schema.sql");
-        Schema::try_from(result).expect("error reading SQL schema")
-    };
-    pub static ref q: Queries = {
-        let result = yesqlr::parse(SQL_QUERIES).expect("error parsing queries.sql");
-        Queries::try_from(result).expect("error reading SQL queries")
-    };
+pub static SCHEMA: LazyLock<Schema> = LazyLock::new(|| {
+    let result = yesqlr::parse(SQL_SCHEMA).expect("error parsing schema.sql");
+    Schema::try_from(result).expect("error reading SQL schema")
+});
 
-    /// Paged over packages by name.
-    pub static ref by_name: Listing = listing(&q.get_packages.query, &q.count_packages.query);
+pub static Q: LazyLock<Queries> = LazyLock::new(|| {
+    let result = yesqlr::parse(SQL_QUERIES).expect("error parsing queries.sql");
+    Queries::try_from(result).expect("error reading SQL queries")
+});
 
-    /// Paged over one license's packages, seeking package_licenses.
-    pub static ref by_license: Listing = listing(
-        &q.get_packages_by_license.query,
-        &q.count_packages_by_license.query
-    );
+/// Paged over packages by name.
+pub static BY_NAME: LazyLock<Listing> =
+    LazyLock::new(|| listing(&Q.get_packages.query, &Q.count_packages.query));
 
-    /// Paged over one keyword's packages, seeking package_keywords.
-    pub static ref by_keyword: Listing = listing(
-        &q.get_packages_by_keyword.query,
-        &q.count_packages_by_keyword.query
-    );
+/// Browse packages matching one filter, sorted by name.
+pub static BY_FACET: LazyLock<Listing> = LazyLock::new(|| {
+    listing(
+        &Q.get_packages_by_facet.query,
+        &Q.count_packages_by_facet.query,
+    )
+});
 
-    /// Paged like by_name, but counted off package_maintainers.
-    pub static ref by_maintainer: Listing = Listing {
-        next: by_name.next.clone(),
-        prev: by_name.prev.clone(),
-        count: expand(&q.count_packages_by_maintainer.query, "", ""),
-    };
-}
+/// Search query with the shared filters added.
+pub static SEARCH_PACKAGES: LazyLock<String> =
+    LazyLock::new(|| filters(&Q.search_packages.query, "$5", "$6"));
 
 fn listing(get: &str, count: &str) -> Listing {
     Listing {
-        next: expand(get, ">", "ASC"),
-        prev: expand(get, "<", "DESC"),
-        count: expand(count, "", ""),
+        next: keyset(get, ">", "ASC"),
+        prev: keyset(get, "<", "DESC"),
+        count: keyset(count, "", ""),
     }
 }
 
-fn expand(sql: &str, cmp: &str, dir: &str) -> String {
-    sql.replace("{FILTERS}", &q.filters.query)
+fn keyset(sql: &str, cmp: &str, dir: &str) -> String {
+    filters(sql, "$4", "$5")
         .replace("{CMP}", cmp)
         .replace("{DIR}", dir)
+}
+
+/// Add the shared filters using the given SQL parameter numbers.
+fn filters(sql: &str, pairs: &str, platform: &str) -> String {
+    let f = Q
+        .filters
+        .query
+        .replace("{P}", pairs)
+        .replace("{PF}", platform);
+
+    sql.replace("{FILTERS}", &f)
 }

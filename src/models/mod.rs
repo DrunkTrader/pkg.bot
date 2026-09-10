@@ -1,5 +1,5 @@
-mod models;
 mod queries;
+mod types;
 
-pub use models::*;
-pub use queries::{by_keyword, by_license, by_maintainer, by_name, q, schema, Listing};
+pub use queries::{Listing, BY_FACET, BY_NAME, Q, SCHEMA, SEARCH_PACKAGES};
+pub use types::*;

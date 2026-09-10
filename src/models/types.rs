@@ -36,8 +36,8 @@ impl<T> Type<Sqlite> for JsonArray<T> {
     }
 }
 
-impl<'q, T: Serialize> Encode<'q, Sqlite> for JsonArray<T> {
-    fn encode_by_ref(&self, buf: &mut Vec<SqliteArgumentValue<'q>>) -> Result<IsNull, BoxDynError> {
+impl<'query, T: Serialize> Encode<'query, Sqlite> for JsonArray<T> {
+    fn encode_by_ref(&self, buf: &mut Vec<SqliteArgumentValue<'query>>) -> Result<IsNull, BoxDynError> {
         let json = serde_json::to_string(&self.0).unwrap_or_else(|_| "[]".to_string());
         <String as Encode<Sqlite>>::encode(json, buf)
     }
@@ -99,10 +99,10 @@ impl Type<Sqlite> for JsonString {
     }
 }
 
-impl<'q> Encode<'q, Sqlite> for JsonString {
+impl<'query> Encode<'query, Sqlite> for JsonString {
     fn encode_by_ref(
         &self,
-        buf: &mut Vec<SqliteArgumentValue<'q>>,
+        buf: &mut Vec<SqliteArgumentValue<'query>>,
     ) -> std::result::Result<IsNull, BoxDynError> {
         let s = if self.0.is_empty() {
             "{}".to_string()
@@ -186,11 +186,6 @@ pub struct Package {
     pub created_at: String,
     pub updated_at: String,
     pub built_at: String,
-
-    // Pagination total (not serialized).
-    #[sqlx(default)]
-    #[serde(skip)]
-    pub total: i64,
 }
 
 /// Package search query parameters.
@@ -204,25 +199,28 @@ pub struct PackageQuery {
     #[serde(default)]
     pub name: String,
 
-    /// Maintainer slug.
+    /// Filters. Each takes a single value, eg: `license=MIT&status=broken`.
     #[serde(default)]
     pub maintainer: String,
 
-    /// Keywords. Repeatable: `tag=x&tag=y`.
     #[serde(default)]
-    pub tag: Vec<String>,
+    pub tag: String,
 
-    /// License SPDX IDs. Repeatable: `license=x&license=y`.
     #[serde(default)]
-    pub license: Vec<String>,
+    pub license: String,
 
-    /// Platforms.
     #[serde(default)]
-    pub platform: Vec<String>,
+    pub group: String,
 
-    /// Status (active, broken, outdated, deleted).
+    #[serde(default)]
+    pub platform: String,
+
     #[serde(default)]
     pub status: String,
+
+    /// Accepts "true"/"false" or "1"/"0"; validate() converts these to "1"/"0".
+    #[serde(default)]
+    pub is_foss: String,
 
     /// Keyset pagination fields.
     #[serde(default)]
@@ -249,21 +247,40 @@ pub struct PackageQuery {
 }
 
 impl PackageQuery {
-    /// Make `query` and `name` mutually exclusive.
-    pub fn validate(&self) -> Result<(), &'static str> {
+    /// Reject combined `query` and `name` searches and convert `is_foss` to "1"/"0".
+    pub fn validate(&mut self) -> Result<(), &'static str> {
         if !self.query.trim().is_empty() && !self.name.trim().is_empty() {
             return Err("query and name cannot be used together");
         }
 
+        self.is_foss = match self.is_foss.trim() {
+            "" => String::new(),
+            "1" | "true" => "1".into(),
+            "0" | "false" => "0".into(),
+            _ => return Err("is_foss must be true or false"),
+        };
+
         Ok(())
     }
 
+    /// Return nonempty filters as (kind, value) pairs. Platform is checked separately.
+    pub fn facets(&self) -> Vec<(&'static str, &str)> {
+        [
+            ("license", self.license.trim()),
+            ("tag", self.tag.trim()),
+            ("maintainer", self.maintainer.trim()),
+            ("group", self.group.trim()),
+            ("status", self.status.trim()),
+            ("is_foss", self.is_foss.as_str()),
+        ]
+        .into_iter()
+        .filter(|(_, v)| !v.is_empty())
+        .collect()
+    }
+
+    /// Whether the listing has any filters.
     pub fn has_filters(&self) -> bool {
-        !self.maintainer.is_empty()
-            || !self.status.is_empty()
-            || !self.tag.is_empty()
-            || !self.license.is_empty()
-            || !self.platform.is_empty()
+        !self.platform.trim().is_empty() || !self.facets().is_empty()
     }
 
     pub fn search(&self) -> (&str, bool) {
@@ -280,14 +297,16 @@ impl PackageQuery {
 pub struct PackageResults {
     pub packages: Vec<Package>,
     pub per_page: i32,
-    pub total: i64,
+    /// Package count for browsing. Omitted for search results.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total: Option<i64>,
 
     /// Set when `total` hit the listing count limit and is really "total or more".
     pub total_capped: bool,
 
     // Offset pagination (search).
     pub page: i32,
-    pub total_pages: i32,
+    pub has_more: bool,
 
     // Keyset pagination (listing).
     #[serde(skip_serializing_if = "Option::is_none")]

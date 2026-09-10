@@ -26,7 +26,6 @@ yesqlr = "0.1.1"
 yesqlr_macros = "0.2"
 log = "0.4"
 env_logger = "0.11"
-lazy_static = "1"
 thiserror = "2"
 
 # Use mimalloc for musl builds (musl's default malloc is very slow).

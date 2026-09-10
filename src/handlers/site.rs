@@ -83,7 +83,7 @@ pub async fn search(
 }
 
 /// Individual package page.
-pub async fn package(
+pub async fn get_package(
     State(ctx): State<Arc<Ctx>>,
     Path((repo_slug, pkg_slug)): Path<(String, String)>,
 ) -> Response {
