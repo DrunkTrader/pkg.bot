@@ -22,6 +22,35 @@ pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
     render(&ctx, "index.html", &tpl_ctx)
 }
 
+/// Standalone advanced search form.
+pub async fn search_form(
+    State(ctx): State<Arc<Ctx>>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+    Query(mut q): Query<PackageQuery>,
+) -> Response {
+    let mut tpl_ctx = base_context(&ctx);
+    tpl_ctx.insert("page_type", "search-form");
+    if let Some(slug) = params.get("repo") {
+        match ctx.repo(slug) {
+            Some(repo) => tpl_ctx.insert("repo", repo),
+            None => return not_found(&ctx, "Unknown repository."),
+        }
+    }
+    if let Err(e) = q.validate() {
+        return render_message(&ctx, StatusCode::BAD_REQUEST, "Invalid search", e);
+    }
+    q.per_page = paginate(
+        q.page,
+        q.per_page,
+        ctx.consts.site_max_per_page,
+        ctx.consts.site_default_per_page,
+    )
+    .1;
+    tpl_ctx.insert("q", &q);
+    insert_search(&mut tpl_ctx, &q);
+    render(&ctx, "search-form.html", &tpl_ctx)
+}
+
 /// Search results page. Takes the same query params as the JSON search API.
 pub async fn search(
     State(ctx): State<Arc<Ctx>>,

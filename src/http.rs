@@ -23,6 +23,7 @@ pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
         router = router.merge(
             Router::new()
                 .route("/", get(site::index))
+                .route("/search", get(site::search_form))
                 .route("/repos/{repo}", get(site::search))
                 .route("/repos/{repo}/{pkg}", get(site::get_package))
                 .route("/static/{*path}", get(serve_static)),

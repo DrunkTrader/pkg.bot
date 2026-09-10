@@ -1,92 +1,95 @@
-<form class="search-form" method="get" action="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">
-  <fieldset class="group">
-    <input type="search" id="q" name="{{ scope }}" value="{{ term }}" placeholder="Search packages"
-      aria-label="Search packages" autocomplete="off" autofocus required />
+{% extends "base.html" %}
 
-    <select id="scope" aria-label="Search in">
+{% block title %}Advanced search &mdash; pkgbot{% endblock %}
+
+{% block content %}
+<h1>Search</h1>
+{% if repo is defined %}
+<form class="search-form advanced-search" method="get" action="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">
+  <label data-field>
+    Query
+    <input type="search" id="advanced-q" data-search-query name="{{ scope }}" value="{{ term }}" placeholder="Search packages"
+      autocomplete="off" />
+  </label>
+
+  <div data-field>
+    <label for="advanced-scope">Search in</label>
+    <select id="advanced-scope" data-search-scope>
       <option value="query"{% if scope == "query" %} selected{% endif %}>Everything</option>
       <option value="name"{% if scope == "name" %} selected{% endif %}>Name only</option>
     </select>
+  </div>
 
-    <select id="repo" aria-label="Repository">
+  <div data-field>
+    <label for="advanced-repo">Repository</label>
+    <select id="advanced-repo" data-search-repo>
       {%- for r in repos %}
       <option value="{{ r.slug }}"{% if r.slug == repo.slug %} selected{% endif %}>{{ r.name }}</option>
       {%- endfor %}
     </select>
+  </div>
 
-    <button type="submit" aria-label="Search"><span class="icon icon-search"></span></button>
-  </fieldset>
+  <p class="text-light">All fields are optional. Combine filters to narrow your search.</p>
+  <label data-field>
+    Maintainer
+    <input type="text" name="maintainer" value="{{ q.maintainer }}" placeholder="eg: alice" />
+    <small data-hint>The maintainer's handle in the repo.</small>
+  </label>
 
-  <ot-dropdown class="advanced">
-    <button type="button" class="ghost small" popovertarget="advanced-search">Advanced search</button>
+  <label data-field>
+    Tag
+    <input type="text" name="tag" value="{{ q.tag }}" placeholder="eg: editor" />
+    <small data-hint>Keyword.</small>
+  </label>
 
-    <article class="card" popover id="advanced-search">
-      <header>
-        <h4>Advanced search</h4>
-        <p class="text-light">All fields are optional and are combined with the search above.</p>
-      </header>
+  <label data-field>
+    License
+    <input type="text" name="license" value="{{ q.license }}" placeholder="eg: MIT" />
+    <small data-hint>SPDX ID.</small>
+  </label>
 
-      <label data-field>
-        Maintainer
-        <input type="text" name="maintainer" value="{{ q.maintainer }}" placeholder="eg: alice" />
-        <small data-hint>The maintainer's handle in the repo.</small>
-      </label>
+  <label data-field>
+    Group
+    <input type="text" name="group" value="{{ q.group }}" placeholder="eg: gnome" />
+  </label>
 
-      <label data-field>
-        Tag
-        <input type="text" name="tag" value="{{ q.tag }}" placeholder="eg: editor" />
-        <small data-hint>Keyword.</small>
-      </label>
+  <label data-field>
+    Platform
+    <input type="text" name="platform" value="{{ q.platform }}" placeholder="eg: x86_64-linux" />
+  </label>
 
-      <label data-field>
-        License
-        <input type="text" name="license" value="{{ q.license }}" placeholder="eg: MIT" />
-        <small data-hint>SPDX ID.</small>
-      </label>
+  <div data-field>
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      {%- for s in ["", "active", "broken", "outdated", "deleted"] %}
+      <option value="{{ s }}"{% if s == q.status %} selected{% endif %}>{% if s %}{{ s | capitalize }}{% else %}Any{% endif %}</option>
+      {%- endfor %}
+    </select>
+  </div>
 
-      <label data-field>
-        Group
-        <input type="text" name="group" value="{{ q.group }}" placeholder="eg: gnome" />
-      </label>
+  <div data-field>
+    <label for="is_foss">Licensing</label>
+    <select id="is_foss" name="is_foss">
+      {%- for v in ["", "true", "false"] %}
+      <option value="{{ v }}"{% if v == q.is_foss or (v == "true" and q.is_foss == "1") or (v == "false" and q.is_foss == "0") %} selected{% endif %}>
+        {%- if v == "true" %}FOSS{% elif v == "false" %}Non-free{% else %}Any{% endif -%}
+      </option>
+      {%- endfor %}
+    </select>
+  </div>
 
-      <label data-field>
-        Platform
-        <input type="text" name="platform" value="{{ q.platform }}" placeholder="eg: x86_64-linux" />
-      </label>
+  <div data-field>
+    <label for="per_page">Per page</label>
+    <select id="per_page" name="per_page">
+      {%- for n in [10, 20, 50] %}
+      <option value="{{ n }}"{% if n == q.per_page %} selected{% endif %}>{{ n }}</option>
+      {%- endfor %}
+    </select>
+  </div>
 
-      <div data-field>
-        <label for="status">Status</label>
-        <select id="status" name="status">
-          {%- for s in ["", "active", "broken", "outdated", "deleted"] %}
-          <option value="{{ s }}"{% if s == q.status %} selected{% endif %}>{% if s %}{{ s | capitalize }}{% else %}Any{% endif %}</option>
-          {%- endfor %}
-        </select>
-      </div>
-
-      <div data-field>
-        <label for="is_foss">Licensing</label>
-        <select id="is_foss" name="is_foss">
-          {%- for v in ["", "true", "false"] %}
-          <option value="{{ v }}"{% if v == q.is_foss or (v == "true" and q.is_foss == "1") or (v == "false" and q.is_foss == "0") %} selected{% endif %}>
-            {%- if v == "true" %}FOSS{% elif v == "false" %}Non-free{% else %}Any{% endif -%}
-          </option>
-          {%- endfor %}
-        </select>
-      </div>
-
-      <div data-field>
-        <label for="per_page">Per page</label>
-        <select id="per_page" name="per_page">
-          {%- for n in [10, 20, 50] %}
-          <option value="{{ n }}"{% if n == q.per_page %} selected{% endif %}>{{ n }}</option>
-          {%- endfor %}
-        </select>
-      </div>
-
-      <footer class="hstack justify-end mt-4">
-        <button type="button" class="outline" popovertarget="advanced-search" popovertargetaction="hide">Close</button>
-        <button type="submit">Search</button>
-      </footer>
-    </article>
-  </ot-dropdown>
+  <button type="submit">Search</button>
 </form>
+{% else %}
+<p>No repositories available.</p>
+{% endif %}
+{% endblock %}
