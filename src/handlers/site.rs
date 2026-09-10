@@ -22,6 +22,13 @@ pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
     render(&ctx, "index.html", &tpl_ctx)
 }
 
+/// Repository directory.
+pub async fn repositories(State(ctx): State<Arc<Ctx>>) -> Response {
+    let mut tpl_ctx = base_context(&ctx);
+    tpl_ctx.insert("page_type", "repositories");
+    render(&ctx, "repositories.html", &tpl_ctx)
+}
+
 /// Standalone advanced search form.
 pub async fn search_form(
     State(ctx): State<Arc<Ctx>>,

@@ -24,6 +24,7 @@ pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
             Router::new()
                 .route("/", get(site::index))
                 .route("/search", get(site::search_form))
+                .route("/repos", get(site::repositories))
                 .route("/repos/{repo}", get(site::search))
                 .route("/repos/{repo}/{pkg}", get(site::get_package))
                 .route("/static/{*path}", get(serve_static)),

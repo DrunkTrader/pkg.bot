@@ -1,0 +1,5 @@
+<form class="search-form" method="get" action="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">
+{% set advanced_form = false %}
+{% include "search-inputs.html" %}
+  <a class="small" href="{{ consts.root_url | safe }}/search?repo={{ repo.slug | urlencode }}&amp;{{ scope }}={{ term | urlencode }}">Advanced search</a>
+</form>

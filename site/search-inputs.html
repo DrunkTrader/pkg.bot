@@ -1,0 +1,12 @@
+  <fieldset class="group">
+    <input type="search" id="{% if advanced_form %}advanced-{% endif %}q" data-search-query name="q" value="{{ term }}" placeholder="Search packages"
+      aria-label="Search packages" autocomplete="off" {% if not advanced_form %}autofocus required{% endif %} />
+
+    <select id="{% if advanced_form %}advanced-{% endif %}repo" data-search-repo aria-label="Repository">
+      {%- for r in repos %}
+      <option value="{{ r.slug }}"{% if r.slug == repo.slug %} selected{% endif %}>{{ r.name }}</option>
+      {%- endfor %}
+    </select>
+
+    <button type="submit" aria-label="Search"><span class="icon icon-search"></span></button>
+  </fieldset>

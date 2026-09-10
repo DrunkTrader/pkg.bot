@@ -99,18 +99,15 @@ body.index {
   .repos {
     margin-top: var(--space-12);
   }
+}
 
-  .repo {
-    padding: var(--space-4);
+/* Repository directory */
+.repositories-table {
+  overflow-x: auto;
 
-    p {
-      margin: var(--space-1) 0 0;
-      font-size: var(--text-8);
-    }
-
-    &:hover {
-      border-color: var(--ring);
-    }
+  th,
+  td {
+    white-space: nowrap;
   }
 }
 

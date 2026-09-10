@@ -4,17 +4,8 @@
 <section class="repos">
   <p class="align-center text-light">
     <strong>{{ total_packages | num }}</strong> packages across
-    <strong>{{ repos | length }}</strong> repositories.
+    <a href="{{ consts.root_url | safe }}/repos"><strong>{{ repos | length }}</strong> repositories</a>.
   </p>
 
-  <div class="row mt-6">
-    {%- for r in repos %}
-    <a class="card col-3 unstyled repo" href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">
-      <strong>{{ r.name }}</strong>
-      <p class="text-light">{{ r.package_count | num }} packages</p>
-      <p class="text-lighter">{{ r.manager }}{% if r.branch %} &middot; {{ r.branch }}{% endif %}</p>
-    </a>
-    {%- endfor %}
-  </div>
 </section>
 {% endblock %}

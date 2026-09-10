@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Repositories &mdash; pkgbot{% endblock %}
+{% block description %}Browse Linux package repositories, package counts, and sync dates.{% endblock %}
+
+{% block content %}
+<h1>Repositories</h1>
+<div class="repositories-table" role="region" aria-label="Repositories" tabindex="0">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Repository</th>
+        <th scope="col">Distribution</th>
+        <th scope="col">Branch</th>
+        <th scope="col">Manager</th>
+        <th scope="col" class="align-right">Packages</th>
+        <th scope="col">Last synced</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for r in repos %}
+      <tr>
+        <th scope="row"><a href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.name }}</a></th>
+        <td>{{ r.distro | default(value="—") }}</td>
+        <td>{{ r.branch | default(value="—") }}</td>
+        <td>{{ r.manager }}</td>
+        <td class="align-right"><a href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.package_count | num }}</a></td>
+        <td>{{ r.synced_at | truncate(length=10, end="") }}</td>
+      </tr>
+      {%- else %}
+      <tr><td colspan="6">No repositories available.</td></tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
