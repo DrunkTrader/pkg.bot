@@ -140,13 +140,18 @@ impl Manager {
 
     pub async fn search_packages(&self, pq: &PackageQuery) -> Result<(Vec<Package>, bool), Error> {
         let (term, name_only) = pq.search();
+        let fts = to_fts_query(term, pq.repo_id, name_only);
+        if fts.is_empty() {
+            return Ok((vec![], false));
+        }
+
         let raw = term.to_lowercase();
         let norm = norm_name(term);
         let wanted = pq.facets();
 
         let mut packages: Vec<Package> = sqlx::query_as(&SEARCH_PACKAGES)
             .bind(pq.repo_id)
-            .bind(to_fts_query(term, pq.repo_id, name_only))
+            .bind(fts)
             .bind(&raw)
             .bind(&norm)
             .bind(to_facet_json(&wanted))
