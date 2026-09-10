@@ -4,7 +4,9 @@
     const elRepo = elForm.querySelector("[data-search-repo]");
     const elScope = elForm.querySelector("[data-search-scope]");
 
-    elScope.addEventListener("change", (e) => (elQ.name = e.target.value));
+    if (elScope) {
+      elScope.addEventListener("change", (e) => (elQ.name = e.target.value));
+    }
 
     // The repo search is a URI (/repos/$repo). Redirect on search.
     const root = elForm.action.replace(/\/repos\/.*$/, "");

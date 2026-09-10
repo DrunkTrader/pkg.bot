@@ -36,8 +36,8 @@ impl<T> Type<Sqlite> for JsonArray<T> {
     }
 }
 
-impl<'query, T: Serialize> Encode<'query, Sqlite> for JsonArray<T> {
-    fn encode_by_ref(&self, buf: &mut Vec<SqliteArgumentValue<'query>>) -> Result<IsNull, BoxDynError> {
+impl<'q, T: Serialize> Encode<'q, Sqlite> for JsonArray<T> {
+    fn encode_by_ref(&self, buf: &mut Vec<SqliteArgumentValue<'q>>) -> Result<IsNull, BoxDynError> {
         let json = serde_json::to_string(&self.0).unwrap_or_else(|_| "[]".to_string());
         <String as Encode<Sqlite>>::encode(json, buf)
     }
@@ -99,10 +99,10 @@ impl Type<Sqlite> for JsonString {
     }
 }
 
-impl<'query> Encode<'query, Sqlite> for JsonString {
+impl<'q> Encode<'q, Sqlite> for JsonString {
     fn encode_by_ref(
         &self,
-        buf: &mut Vec<SqliteArgumentValue<'query>>,
+        buf: &mut Vec<SqliteArgumentValue<'q>>,
     ) -> std::result::Result<IsNull, BoxDynError> {
         let s = if self.0.is_empty() {
             "{}".to_string()
@@ -193,9 +193,9 @@ pub struct Package {
 pub struct PackageQuery {
     /// Search across every indexed field. Mutually exclusive with `name`.
     #[serde(default)]
-    pub query: String,
+    pub q: String,
 
-    /// Search restricted to the package name and slug. Mutually exclusive with `query`.
+    /// Search restricted to the package name and slug. Mutually exclusive with `q`.
     #[serde(default)]
     pub name: String,
 
@@ -247,10 +247,10 @@ pub struct PackageQuery {
 }
 
 impl PackageQuery {
-    /// Reject combined `query` and `name` searches and convert `is_foss` to "1"/"0".
+    /// Reject combined `q` and `name` searches and convert `is_foss` to "1"/"0".
     pub fn validate(&mut self) -> Result<(), &'static str> {
-        if !self.query.trim().is_empty() && !self.name.trim().is_empty() {
-            return Err("query and name cannot be used together");
+        if !self.q.trim().is_empty() && !self.name.trim().is_empty() {
+            return Err("q and name cannot be used together");
         }
 
         self.is_foss = match self.is_foss.trim() {
@@ -285,7 +285,7 @@ impl PackageQuery {
 
     pub fn search(&self) -> (&str, bool) {
         if self.name.trim().is_empty() {
-            (self.query.trim(), false)
+            (self.q.trim(), false)
         } else {
             (self.name.trim(), true)
         }

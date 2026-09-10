@@ -175,7 +175,7 @@ fn base_context(ctx: &Ctx) -> tera::Context {
 fn insert_search(tpl_ctx: &mut tera::Context, q: &PackageQuery) {
     let (term, name_only) = q.search();
     tpl_ctx.insert("term", term);
-    tpl_ctx.insert("scope", if name_only { "name" } else { "query" });
+    tpl_ctx.insert("scope", if name_only { "name" } else { "q" });
 }
 
 /// Render a template into an HTML response.
@@ -209,7 +209,7 @@ fn not_found(ctx: &Ctx, message: &str) -> Response {
 }
 
 /// Drop pagination params from a raw query string so that pagination links can
-/// append their own. Eg: "query=vim&page=3" => "query=vim&"
+/// append their own. Eg: "q=vim&page=3" => "q=vim&"
 fn strip_pagination(raw: &str) -> String {
     raw.split('&')
         .filter(|p| {
