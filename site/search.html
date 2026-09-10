@@ -9,87 +9,60 @@
 {# Every value interpolated into it is URL encoded, so it is output unescaped. #}
 {% set filter_url = consts.root_url ~ "/repos/" ~ repo.slug ~ "?" ~ scope ~ "=" ~ enc_query ~ "&" %}
 
-<div class="row">
-  <div class="col-8 results">
-    <p class="summary text-light">
-      {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
-      {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in {{ repo.name }}
-    </p>
+<section class="results">
+  <p class="summary text-light">
+    {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
+    {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in {{ repo.name }}
+  </p>
 
-    {% if results.packages | length == 0 %}
-      <article class="card align-center">
-        <h3>No packages found</h3>
-        <p class="text-light">Try a different keyword, or search another repository.</p>
-      </article>
-    {% else %}
-      <ol class="unstyled packages">
-        {%- for p in results.packages %}
-        <li class="card">
-          <header class="hstack justify-between">
-            <h3><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a></h3>
-            <span class="hstack gap-2">
-              {%- if p.status != "active" %}<span class="badge" data-variant="warning">{{ p.status }}</span>{% endif %}
-              {%- if p.version %}<span class="badge outline">{{ p.version }}</span>{% endif %}
-            </span>
-          </header>
-
-          {% if p.slug != p.name %}<p class="slug"><code>{{ p.slug }}</code></p>{% endif %}
-
-          <p class="excerpt">
-            {%- if p.excerpt %}{{ p.excerpt }}
-            {%- elif p.description %}{{ p.description | truncate(length=200) }}
-            {%- endif -%}
-          </p>
-
-          <footer class="hstack justify-between text-light">
-            <div class="hstack meta">
-              {%- for l in p.licenses %}
-              <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
-              {%- endfor %}
-
-              {%- for k in p.keywords | slice(end=4) %}
-              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
-              {%- endfor %}
-
-              {%- for m in p.maintainers | slice(end=2) %}
-              <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer">{{ m.name | default(value=m.handle) }}</a>
-              {%- endfor %}
-
-              {%- if p.installed_bytes %}<span>{{ p.installed_bytes | bytes }}</span>{% endif %}
-            </div>
-            <span>Updated {{ p.updated_at | truncate(length=10, end="") }}</span>
-          </footer>
-        </li>
-        {%- endfor %}
-      </ol>
-
-      {% include "pagination.html" %}
-    {% endif %}
-  </div><!-- results -->
-
-  <aside class="col-3 offset-1">
-    <article class="card repo-info">
-      <h4>{{ repo.name }}</h4>
-      <dl>
-        <dt>Packages</dt><dd>{{ repo.package_count | num }}</dd>
-        <dt>Manager</dt><dd>{{ repo.manager }}</dd>
-        {% if repo.distro %}<dt>Distro</dt><dd>{{ repo.distro }}</dd>{% endif %}
-        {% if repo.branch %}<dt>Branch</dt><dd>{{ repo.branch }}</dd>{% endif %}
-        <dt>Synced</dt><dd>{{ repo.synced_at | truncate(length=10, end="") }}</dd>
-      </dl>
-      {% if repo.homepage_url %}<a href="{{ repo.homepage_url }}" rel="noreferrer noopener">Repository homepage</a>{% endif %}
+  {% if results.packages | length == 0 %}
+    <article class="card align-center">
+      <h3>No packages found</h3>
+      <p class="text-light">Try a different keyword, or search another repository.</p>
     </article>
+  {% else %}
+    <ol class="unstyled packages">
+      {%- for p in results.packages %}
+      <li class="card">
+        <header class="hstack justify-between">
+          <h3><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a></h3>
+          <span class="hstack gap-2">
+            {%- if p.status != "active" %}<span class="badge" data-variant="warning">{{ p.status }}</span>{% endif %}
+            {%- if p.version %}<span class="badge outline">{{ p.version }}</span>{% endif %}
+          </span>
+        </header>
 
-    {% if repos | length > 1 %}
-    <nav class="card mt-4" aria-label="Other repositories">
-      <h4>Search other repos</h4>
-      <ul class="unstyled">
-        {%- for r in repos %}{% if r.slug != repo.slug %}
-        <li><a href="{{ consts.root_url | safe }}/repos/{{ r.slug }}?{{ scope }}={{ enc_query }}">{{ r.name }}</a></li>
-        {%- endif %}{% endfor %}
-      </ul>
-    </nav>
-    {% endif %}
-  </aside>
-</div>
+        {% if p.slug != p.name %}<p class="slug"><code>{{ p.slug }}</code></p>{% endif %}
+
+        <p class="excerpt">
+          {%- if p.excerpt %}{{ p.excerpt }}
+          {%- elif p.description %}{{ p.description | truncate(length=200) }}
+          {%- endif -%}
+        </p>
+
+        <footer class="hstack justify-between text-light">
+          <div class="hstack meta">
+            {%- for l in p.licenses %}
+            <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
+            {%- endfor %}
+
+            {%- for k in p.keywords | slice(end=4) %}
+            <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
+            {%- endfor %}
+
+            {%- for m in p.maintainers | slice(end=2) %}
+            <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer">{{ m.name | default(value=m.handle) }}</a>
+            {%- endfor %}
+
+            {%- if p.installed_bytes %}<span>{{ p.installed_bytes | bytes }}</span>{% endif %}
+          </div>
+          <span>Updated {{ p.updated_at | truncate(length=10, end="") }}</span>
+        </footer>
+      </li>
+      {%- endfor %}
+    </ol>
+
+    {% include "pagination.html" %}
+  {% endif %}
+</section><!-- results -->
 {% endblock %}
