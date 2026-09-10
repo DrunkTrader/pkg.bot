@@ -2,7 +2,9 @@
   --container-max: 1000px;
   --primary: light-dark(#111, #fafafa);
   --radius-full: 3px;
+  --radius-medium: 3px;
   --input: light-dark(#999, #333);
+  --background: light-dark(#fbfbfb, #111);
 }
 
 body {
@@ -44,21 +46,11 @@ body {
 /* Search form */
 .search-form {
   fieldset.group {
-    > :first-child {
-      border-radius: var(--radius-full) 0 0 var(--radius-full);
-      padding-inline-start: var(--space-5);
-    }
-    
-    margin-block-end: var(--space-1);
+    margin-block: var(--space-1);
   }
 
   a {
     font-size: var(--text-8);
-  }
-
-  fieldset.group > :last-child {
-    border-radius: 0 var(--radius-full) var(--radius-full) 0;
-    padding-inline: var(--space-5);
   }
 
   select {
@@ -89,8 +81,14 @@ body.index {
     text-align: center;
   }
 
-  .logo a {
-    font-size: var(--text-1);
+  .logo {
+    a {
+      font-size: var(--text-1);
+    }
+
+    img {
+      max-height: none;
+    }
   }
 
   .search-form {
