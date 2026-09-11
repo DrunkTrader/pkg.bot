@@ -103,7 +103,8 @@
 
     <article class="card mt-4">
       <h4>Install</h4>
-      <pre><code>{% if repo.manager == "nix" %}nix-env -iA nixpkgs.{{ pkg.slug }}{% elif repo.manager == "pacman" %}pacman -S {{ pkg.slug }}{% elif repo.manager == "aur" %}git clone https://aur.archlinux.org/{{ pkg.slug }}.git{% elif repo.manager == "apt" %}apt install {{ pkg.slug }}{% elif repo.manager == "apk" %}apk add {{ pkg.slug }}{% else %}{{ pkg.slug }}{% endif %}</code></pre>
+      {% set install_name = pkg.meta.trackname | default(value=pkg.slug) %}
+      <pre><code>{% if repo.manager == "nix" %}nix-env -iA nixpkgs.{{ install_name }}{% elif repo.manager == "pacman" %}pacman -S {{ install_name }}{% elif repo.manager == "aur" %}git clone https://aur.archlinux.org/{{ install_name }}.git{% elif repo.manager == "apt" %}apt install {{ install_name }}{% elif repo.manager == "apk" %}apk add {{ install_name }}{% else %}{{ install_name }}{% endif %}</code></pre>
     </article>
   </aside>
 </div>

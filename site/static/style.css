@@ -81,6 +81,12 @@ body.index {
     text-align: center;
   }
 
+  .search-form {
+    input, select, button {
+      font-size: var(--text-5);
+    }
+  }
+
   .logo {
     a {
       font-size: var(--text-1);
