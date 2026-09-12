@@ -32,7 +32,8 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="footer align-center text-light">
+  <footer class="footer text-light">
+    {% if render_time %}<p aria-label="Rendered in {{ render_time }}">{{ render_time }}</p>{% endif %}
   </footer>
 </div><!-- container -->
 </body>

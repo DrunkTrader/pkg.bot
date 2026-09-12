@@ -1,13 +1,14 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use axum::{
     extract::{Path, RawQuery, State},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
+    Extension,
 };
 use axum_extra::extract::Query;
 
-use super::{list_packages, paginate, Ctx};
+use super::{list_packages, paginate, Ctx, ReqStarted};
 use crate::models::{PackageQuery, PackageResults};
 
 /// Landing page.
@@ -19,18 +20,18 @@ pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
         &ctx.repos.iter().map(|r| r.package_count).sum::<i64>(),
     );
 
-    render(&ctx, "index.html", &tpl_ctx)
+    render(&ctx, "index.html", &mut tpl_ctx)
 }
 
 /// Repository directory.
-pub async fn repositories(State(ctx): State<Arc<Ctx>>) -> Response {
+pub async fn render_repos(State(ctx): State<Arc<Ctx>>) -> Response {
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "repositories");
-    render(&ctx, "repositories.html", &tpl_ctx)
+    render(&ctx, "repositories.html", &mut tpl_ctx)
 }
 
 /// Standalone advanced search form.
-pub async fn search_form(
+pub async fn render_search_form(
     State(ctx): State<Arc<Ctx>>,
     Query(params): Query<std::collections::HashMap<String, String>>,
     Query(mut q): Query<PackageQuery>,
@@ -55,12 +56,13 @@ pub async fn search_form(
     .1;
     tpl_ctx.insert("q", &q);
     insert_search(&mut tpl_ctx, &q);
-    render(&ctx, "search-form.html", &tpl_ctx)
+    render(&ctx, "search-form.html", &mut tpl_ctx)
 }
 
 /// Search results page. Takes the same query params as the JSON search API.
-pub async fn search(
+pub async fn render_search(
     State(ctx): State<Arc<Ctx>>,
+    Extension(started): Extension<ReqStarted>,
     Path(repo_slug): Path<String>,
     RawQuery(raw_query): RawQuery,
     Query(mut q): Query<PackageQuery>,
@@ -102,6 +104,7 @@ pub async fn search(
     tpl_ctx.insert("q", &q);
     insert_search(&mut tpl_ctx, &q);
     tpl_ctx.insert("results", &results);
+    tpl_ctx.insert("render_time", &fmt_duration(started.0.elapsed()));
 
     // Prefix that pagination links append their own cursor or page param to,
     // retaining all the other search params.
@@ -115,7 +118,7 @@ pub async fn search(
         ),
     );
 
-    render(&ctx, "search.html", &tpl_ctx)
+    render(&ctx, "search.html", &mut tpl_ctx)
 }
 
 /// Individual package page.
@@ -155,7 +158,7 @@ pub async fn get_package(
 
     tpl_ctx.insert("pkg", &pkg);
 
-    render(&ctx, "package.html", &tpl_ctx)
+    render(&ctx, "package.html", &mut tpl_ctx)
 }
 
 /// Template context common to all pages.
@@ -186,7 +189,7 @@ fn insert_search(tpl_ctx: &mut tera::Context, q: &PackageQuery) {
 }
 
 /// Render a template into an HTML response.
-fn render(ctx: &Ctx, tpl: &str, tpl_ctx: &tera::Context) -> Response {
+fn render(ctx: &Ctx, tpl: &str, tpl_ctx: &mut tera::Context) -> Response {
     let Some(site) = &ctx.site else {
         return (StatusCode::NOT_FOUND, "not found").into_response();
     };
@@ -208,7 +211,7 @@ fn render_message(ctx: &Ctx, status: StatusCode, title: &str, message: &str) -> 
     tpl_ctx.insert("title", title);
     tpl_ctx.insert("message", message);
 
-    (status, render(ctx, "message.html", &tpl_ctx)).into_response()
+    (status, render(ctx, "message.html", &mut tpl_ctx)).into_response()
 }
 
 fn not_found(ctx: &Ctx, message: &str) -> Response {
@@ -227,4 +230,16 @@ fn strip_pagination(raw: &str) -> String {
         })
         .flat_map(|p| [p, "&"])
         .collect()
+}
+
+/// Format a duration as `1s3ms`, `10ms`, or `250us`.
+fn fmt_duration(d: Duration) -> String {
+    let ms = d.as_millis();
+    if ms >= 1000 {
+        format!("{}s{}ms", ms / 1000, ms % 1000)
+    } else if ms > 0 {
+        format!("{}ms", ms)
+    } else {
+        format!("{}us", d.as_micros())
+    }
 }

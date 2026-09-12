@@ -1,14 +1,15 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Request, State},
     http::{header, StatusCode},
-    response::IntoResponse,
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
     routing::get,
     Router,
 };
 
-use crate::handlers::{packages, site, Ctx};
+use crate::handlers::{packages, site, Ctx, ReqStarted};
 
 /// Initialize HTTP routes.
 pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
@@ -23,11 +24,12 @@ pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
         router = router.merge(
             Router::new()
                 .route("/", get(site::index))
-                .route("/search", get(site::search_form))
-                .route("/repos", get(site::repositories))
-                .route("/repos/{repo}", get(site::search))
+                .route("/search", get(site::render_search_form))
+                .route("/repos", get(site::render_repos))
+                .route("/repos/{repo}", get(site::render_search))
                 .route("/repos/{repo}/{pkg}", get(site::get_package))
-                .route("/static/{*path}", get(serve_static)),
+                .route("/static/{*path}", get(serve_static))
+                .layer(middleware::from_fn(req_time)),
         );
     } else {
         log::info!("no --site given. serving JSON APIs only");
@@ -70,4 +72,10 @@ async fn serve_static(State(ctx): State<Arc<Ctx>>, Path(path): Path<String>) -> 
             .into_response(),
         Err(_) => not_found,
     }
+}
+
+/// Add a timestamp to request to track elapsed time.
+async fn req_time(mut req: Request, next: Next) -> Response {
+    req.extensions_mut().insert(ReqStarted(Instant::now()));
+    next.run(req).await
 }

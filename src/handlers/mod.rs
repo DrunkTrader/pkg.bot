@@ -1,7 +1,7 @@
 pub mod packages;
 pub mod site;
 
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, time::Instant};
 
 use axum::{
     http::StatusCode,
@@ -15,6 +15,10 @@ use crate::{
     manager::Manager,
     models::{Cursor, PackageQuery, PackageResults, Repo},
 };
+
+/// Request start time inserted by the `track_time` middleware.
+#[derive(Clone, Copy)]
+pub struct ReqStarted(pub Instant);
 
 /// Application context passed to all handlers.
 pub struct Ctx {
