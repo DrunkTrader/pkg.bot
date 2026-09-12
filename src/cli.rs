@@ -8,11 +8,11 @@ use clap::{Parser, Subcommand};
 #[command(version = env!("VERSION"))]
 pub struct Cli {
     /// Path to one or more config files (merged in order).
-    #[arg(long, default_value = "config.toml", action = clap::ArgAction::Append)]
+    #[arg(long, default_value = "config.toml", global = true, action = clap::ArgAction::Append)]
     pub config: Vec<PathBuf>,
 
     /// Path to SQLite database file.
-    #[arg(long = "db", default_value = "data.db")]
+    #[arg(long = "db", default_value = "data.db", global = true)]
     pub db_path: PathBuf,
 
     /// Path to the site directory. If empty, only the HTTP API `/api/*`handlers are registered.
@@ -25,6 +25,12 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Import Repology PG dump into a new SQLite database.
+    Import {
+        #[arg(long, default_value = "postgres://repology@127.0.0.1:55432/repology")]
+        pg: String,
+    },
+
     /// Generate a sample config file.
     NewConfig {
         /// Output path for config file.

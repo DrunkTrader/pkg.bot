@@ -44,7 +44,6 @@ async fn serve_static(State(ctx): State<Arc<Ctx>>, Path(path): Path<String>) -> 
         return not_found;
     };
 
-
     let rel = std::path::Path::new(path.trim_start_matches('/'));
     if rel
         .components()

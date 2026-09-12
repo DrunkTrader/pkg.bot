@@ -342,6 +342,9 @@ impl Cursor {
 /// Application configuration.
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct Config {
+    #[serde(default)]
+    pub import: ImportConfig,
+
     pub app: AppConfig,
     pub db: DbConfig,
 
@@ -419,4 +422,10 @@ impl Default for SiteResultsConfig {
             max_per_page: default_site_max_per_page(),
         }
     }
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct ImportConfig {
+    #[serde(default)]
+    pub families: Vec<String>,
 }

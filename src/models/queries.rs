@@ -3,12 +3,44 @@ use yesqlr_macros::ScanQueries;
 
 const SQL_SCHEMA: &[u8] = include_bytes!("../../static/sql/schema.sql");
 const SQL_QUERIES: &[u8] = include_bytes!("../../static/sql/queries.sql");
+const SQL_IMPORT: &[u8] = include_bytes!("../../static/sql/import.sql");
 
 /// Parsed SQL schema.
 #[derive(Default, ScanQueries)]
 pub struct Schema {
     pub pragma: yesqlr::Query,
     pub schema: yesqlr::Query,
+}
+
+/// Parsed SQL queries for the `import` command.
+#[derive(Default, ScanQueries)]
+pub struct Import {
+    #[name = "set-pragmas"]
+    pub set_pragmas: yesqlr::Query,
+
+    #[name = "pg-check-libversion"]
+    pub pg_check_libversion: yesqlr::Query,
+
+    #[name = "pg-get-repos"]
+    pub pg_get_repos: yesqlr::Query,
+
+    #[name = "pg-get-maintainers"]
+    pub pg_get_maintainers: yesqlr::Query,
+
+    #[name = "pg-declare-packages"]
+    pub pg_declare_packages: yesqlr::Query,
+
+    #[name = "pg-fetch-packages"]
+    pub pg_fetch_packages: yesqlr::Query,
+
+    #[name = "update-counts"]
+    pub update_counts: yesqlr::Query,
+
+    #[name = "build-facets"]
+    pub build_facets: yesqlr::Query,
+
+    #[name = "build-fts"]
+    pub build_fts: yesqlr::Query,
 }
 
 /// Parsed SQL queries.
@@ -52,6 +84,11 @@ pub struct Listing {
 pub static SCHEMA: LazyLock<Schema> = LazyLock::new(|| {
     let result = yesqlr::parse(SQL_SCHEMA).expect("error parsing schema.sql");
     Schema::try_from(result).expect("error reading SQL schema")
+});
+
+pub static IMPORT: LazyLock<Import> = LazyLock::new(|| {
+    let result = yesqlr::parse(SQL_IMPORT).expect("error parsing import.sql");
+    Import::try_from(result).expect("error reading SQL import queries")
 });
 
 pub static Q: LazyLock<Queries> = LazyLock::new(|| {

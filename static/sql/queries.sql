@@ -138,33 +138,36 @@ INNER JOIN repos r ON r.id = p.repo_id
 ORDER BY x.rank DESC, p.name, p.id;
 
 -- name: rebuild-facets
--- Rebuild filter rows and counts for $1 (repo_id).
+-- Rebuild filter rows and counts for $1 (repo_id)
 -- Run in the same transaction as package updates.
 DELETE FROM package_facets WHERE repo_id = $1;
 DELETE FROM facet_counts WHERE repo_id = $1;
 
+-- Read package payloads once and build facets.
+WITH selected AS MATERIALIZED (
+    SELECT repo_id, id, name, licenses, keywords, "groups", status, is_foss
+    FROM packages WHERE repo_id = $1
+)
 INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
-    SELECT p.repo_id, 'license', l.value, p.name, p.id FROM packages p, JSON_EACH(p.licenses) l WHERE p.repo_id = $1;
-
-INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
-    SELECT p.repo_id, 'tag', k.value, p.name, p.id FROM packages p, JSON_EACH(p.keywords) k WHERE p.repo_id = $1;
-
-INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
-    SELECT p.repo_id, 'group', g.value, p.name, p.id FROM packages p, JSON_EACH(p."groups") g WHERE p.repo_id = $1;
-
-INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
-    SELECT p.repo_id, 'status', p.status, p.name, p.id FROM packages p WHERE p.repo_id = $1;
-
-INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
+    SELECT p.repo_id, 'license', l.value, p.name, p.id
+    FROM selected p, JSON_EACH(p.licenses) l
+    UNION ALL
+    SELECT p.repo_id, 'tag', k.value, p.name, p.id
+    FROM selected p, JSON_EACH(p.keywords) k
+    UNION ALL
+    SELECT p.repo_id, 'group', g.value, p.name, p.id
+    FROM selected p, JSON_EACH(p."groups") g
+    UNION ALL
+    SELECT p.repo_id, 'status', p.status, p.name, p.id FROM selected p
+    UNION ALL
     SELECT p.repo_id, 'is_foss', CAST(p.is_foss AS TEXT), p.name, p.id
-    FROM packages p WHERE p.repo_id = $1 AND p.is_foss IS NOT NULL;
-
-INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
+    FROM selected p WHERE p.is_foss IS NOT NULL
+    UNION ALL
     SELECT p.repo_id, 'maintainer', mt.slug, p.name, p.id
-    FROM packages p
-    INNER JOIN package_maintainers pm ON pm.package_id = p.id
-    INNER JOIN maintainers mt ON mt.id = pm.maintainer_id
-    WHERE p.repo_id = $1;
+    FROM selected p
+    CROSS JOIN package_maintainers pm ON pm.package_id = p.id
+    CROSS JOIN maintainers mt ON mt.id = pm.maintainer_id
+    ORDER BY 1, 2, 3, 4, 5;
 
 INSERT INTO facet_counts (repo_id, kind, value, package_count)
     SELECT repo_id, kind, value, COUNT(*) FROM package_facets WHERE repo_id = $1 GROUP BY 1, 2, 3;

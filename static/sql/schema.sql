@@ -89,8 +89,7 @@ CREATE INDEX IF NOT EXISTS idx_packages_repo_name ON packages (repo_id, name);
 -- maintainers
 CREATE TABLE IF NOT EXISTS maintainers (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    repo_id           INTEGER NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
-    slug              TEXT    NOT NULL,           -- normalized handle
+    slug              TEXT    NOT NULL,           -- email address or upstream handle
     handle            TEXT    NOT NULL,           -- as displayed upstream. eg: 'UserName' or @username
     name              TEXT,                       -- display name. eg: 'User Name'
     email             TEXT,
@@ -100,7 +99,7 @@ CREATE TABLE IF NOT EXISTS maintainers (
     created_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
 
-    UNIQUE (repo_id, slug)
+    UNIQUE (slug)
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_maintainers_slug ON maintainers (slug);

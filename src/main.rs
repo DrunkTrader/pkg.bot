@@ -3,6 +3,7 @@ mod config;
 mod db;
 mod handlers;
 mod http;
+mod importer;
 mod init;
 mod manager;
 mod models;
@@ -32,6 +33,16 @@ async fn main() {
     // Handle CLI flags.
     if let Some(cmd) = cli.command {
         match cmd {
+            // Import Repology PG dump into a new SQLite db.
+            Commands::Import { pg } => {
+                let config = config::load_all(&cli.config);
+                if let Err(e) = importer::run(&pg, &cli.db_path, &config.import.families).await {
+                    log::error!("import failed: {e}");
+                    std::process::exit(1);
+                }
+                return;
+            }
+
             // Generate a new config file.
             Commands::NewConfig { path } => {
                 match config::generate_sample(&path) {
