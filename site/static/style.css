@@ -21,6 +21,7 @@ body {
 }
 
 .icon-search { --icon: url("/static/search.svg"); }
+.icon-avatar { --icon: url("/static/avatar.svg"); }
 
 /* Header */
 .header {
@@ -216,11 +217,29 @@ body.index {
   }
 
   .col-version > span,
-  .col-maintainer > a {
+  .maintainer-name {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .maintainers {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      max-width: 100%;
+    }
+
+    .icon {
+      flex: none;
+    }
   }
 
   .col-updated {

@@ -74,10 +74,12 @@
               {%- endfor %}
             </td>
             <td class="package-filters col-maintainer">
+              <div class="maintainers">
               {%- for m in p.maintainers | slice(end=2) %}
-              <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer">{{ m.name | default(value=m.handle) }}</a>
+                <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer"><span class="icon icon-avatar" aria-hidden="true"></span><span class="maintainer-name">{{ m.name | default(value=m.handle) }}</span></a>
               {%- else %}<span class="text-light" aria-label="Maintainer unavailable">—</span>
               {%- endfor %}
+              </div>
             </td>
             <td class="col-updated text-light">
               {% if p.updated_at %}<time datetime="{{ p.updated_at | truncate(length=10, end="") }}">{{ p.updated_at | truncate(length=10, end="") }}</time>{% else %}<span aria-label="Update date unavailable">—</span>{% endif %}
