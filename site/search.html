@@ -10,7 +10,7 @@
 {% set filter_url = consts.root_url ~ "/repos/" ~ repo.slug ~ "?" ~ scope ~ "=" ~ enc_query ~ "&" %}
 
 <section class="results">
-  <p class="summary text-light">
+  <p id="results-summary" class="summary text-light">
     {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
     {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in {{ repo.name }}
   </p>
@@ -21,46 +21,72 @@
       <p class="text-light">Try a different keyword, or search another repository.</p>
     </article>
   {% else %}
-    <ol class="unstyled packages">
-      {%- for p in results.packages %}
-      <li class="card">
-        <header class="hstack justify-between">
-          <h3><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a></h3>
-          <span class="hstack gap-2">
-            {%- if p.status != "active" %}<span class="badge" data-variant="warning">{{ p.status }}</span>{% endif %}
-            {%- if p.version %}<span class="badge outline">{{ p.version }}</span>{% endif %}
-          </span>
-        </header>
-
-        {% if p.slug != p.name %}<p class="slug"><code>{{ p.slug }}</code></p>{% endif %}
-
-        <p class="excerpt">
-          {%- if p.excerpt %}{{ p.excerpt }}
-          {%- elif p.description %}{{ p.description | truncate(length=200) }}
-          {%- endif -%}
-        </p>
-
-        <footer class="hstack justify-between text-light">
-          <div class="hstack meta">
-            {%- for l in p.licenses %}
-            <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
-            {%- endfor %}
-
-            {%- for k in p.keywords | slice(end=4) %}
-            <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
-            {%- endfor %}
-
-            {%- for m in p.maintainers | slice(end=2) %}
-            <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer">{{ m.name | default(value=m.handle) }}</a>
-            {%- endfor %}
-
-            {%- if p.installed_bytes %}<span>{{ p.installed_bytes | bytes }}</span>{% endif %}
-          </div>
-          <span>Updated {{ p.updated_at | truncate(length=10, end="") }}</span>
-        </footer>
-      </li>
-      {%- endfor %}
-    </ol>
+    <div class="packages-wrap card" role="region" aria-labelledby="results-summary" tabindex="0">
+      <table class="packages" aria-labelledby="results-summary">
+        <colgroup>
+          <col class="col-package" />
+          <col class="col-version" />
+          <col class="col-license" />
+          <col class="col-maintainer" />
+          <col class="col-updated" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col" class="col-package">Package</th>
+            <th scope="col" class="col-version">Version</th>
+            <th scope="col" class="col-license">License</th>
+            <th scope="col" class="col-maintainer">Maintainer(s)</th>
+            <th scope="col" class="col-updated">Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {%- for p in results.packages %}
+          <tr>
+            <th scope="row" class="col-package package-details">
+              <div class="package-heading">
+                <a class="package-name" href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a>
+                {%- if p.status != "active" %}<span class="badge" data-variant="warning">{{ p.status }}</span>{% endif %}
+              </div>
+              {% if p.slug != p.name %}<p class="slug"><code>{{ p.slug }}</code></p>{% endif %}
+              {% if p.excerpt or p.description %}
+              <p class="excerpt">
+                {%- if p.excerpt %}{{ p.excerpt }}
+                {%- else %}{{ p.description | truncate(length=200) }}
+                {%- endif -%}
+              </p>
+              {% endif %}
+              {% if p.keywords | length > 0 %}
+              <div class="package-tags">
+                {%- for k in p.keywords | slice(end=4) %}
+                <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
+                {%- endfor %}
+              </div>
+              {% endif %}
+            </th>
+            <td class="col-version">
+              {% if p.version %}<span class="package-version" title="{{ p.version }}">{{ p.version }}</span>{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
+              {% if p.installed_bytes %}<span class="package-size text-light">{{ p.installed_bytes | bytes }} installed</span>{% endif %}
+            </td>
+            <td class="col-license package-filters">
+              {%- for l in p.licenses %}
+              <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
+              {%- else %}<span class="text-light" aria-label="License unavailable">—</span>
+              {%- endfor %}
+            </td>
+            <td class="package-filters col-maintainer">
+              {%- for m in p.maintainers | slice(end=2) %}
+              <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer">{{ m.name | default(value=m.handle) }}</a>
+              {%- else %}<span class="text-light" aria-label="Maintainer unavailable">—</span>
+              {%- endfor %}
+            </td>
+            <td class="col-updated text-light">
+              {% if p.updated_at %}<time datetime="{{ p.updated_at | truncate(length=10, end="") }}">{{ p.updated_at | truncate(length=10, end="") }}</time>{% else %}<span aria-label="Update date unavailable">—</span>{% endif %}
+            </td>
+          </tr>
+          {%- endfor %}
+        </tbody>
+      </table>
+    </div>
 
     {% include "pagination.html" %}
   {% endif %}

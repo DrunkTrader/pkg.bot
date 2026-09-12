@@ -1,5 +1,5 @@
 :root {
-  --container-max: 1000px;
+  --container-max: 1300px;
   --primary: light-dark(#111, #fafafa);
   --radius-full: 3px;
   --radius-medium: 3px;
@@ -127,43 +127,110 @@ body.index {
   margin-bottom: var(--space-4);
 }
 
+.packages-wrap {
+  overflow-x: auto;
+  padding: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+}
+
 .packages {
-  li {
-    padding: var(--space-4);
+  width: 100%;
+  min-width: 780px;
+  table-layout: fixed;
+  margin: 0;
+  border-collapse: collapse;
+
+  .col-package { width: 45%; }
+  .col-version { width: 10%; }
+  .col-license { width: 12%; }
+  .col-maintainer { width: 23%; }
+  .col-updated { width: 10%; }
+
+  th,
+  td {
+    padding: var(--space-4) var(--space-3);
+    vertical-align: top;
+    text-align: left;
+    overflow-wrap: anywhere;
+    border-bottom: 1px solid var(--border);
   }
 
-  li:not(:last-child) {
-    margin-bottom: var(--space-4);
+  thead th {
+    padding-block: var(--space-3);
+    background: var(--faint);
+    color: var(--muted-foreground);
+    font-weight: var(--font-medium);
+    white-space: nowrap;
   }
 
-  h3 {
-    margin: 0;
-    font-size: var(--text-4);
+  tbody tr:last-child > * {
+    border-bottom: 0;
   }
 
-  header {
+  tbody tr:hover,
+  tbody tr:focus-within {
+    background: var(--faint);
+  }
+
+  .package-details {
+    font-weight: var(--font-normal);
+  }
+
+  .package-heading {
+    display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
+    gap: var(--space-2);
   }
 
-  header > * {
-    min-width: 0;
-    max-width: 100%;
+  .package-name {
+    font-size: var(--text-6);
+    font-weight: var(--font-semibold);
   }
 
-  h3,
-  .slug,
-  .badge,
-  .meta > * {
+  .excerpt {
+    color: var(--muted-foreground);
+    line-height: 1.5;
+  }
+
+  .slug code {
+    padding: 0;
+    background: none;
+    color: var(--muted-foreground);
+  }
+
+  .package-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
+  }
+
+  td.col-version,
+  td.col-maintainer {
+    font-size: var(--text-7);
+  }
+
+  .col-version > span,
+  .col-maintainer > a {
     display: block;
-    min-width: 0;
-    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .slug, .badge, .meta > * {
-    max-width: 30ch;
+  .col-updated {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  a:hover {
+    text-decoration: underline;
   }
 }
 
