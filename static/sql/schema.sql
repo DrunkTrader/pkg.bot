@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS packages (
     homepage_url      TEXT,                       -- upstream project URL
 
     licenses          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(licenses)),  -- eg: ["GPL-3.0-or-later"]
-    is_foss           INTEGER CHECK (is_foss IN (0, 1)),
+    is_nonfree        INTEGER CHECK (is_nonfree IN (0, 1)),
     platforms         TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(platforms)), -- eg: ["x86_64-linux","aarch64-darwin"]
 
     "groups"          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid("groups")),
@@ -117,7 +117,7 @@ CREATE INDEX IF NOT EXISTS idx_pkg_maintainers ON package_maintainers (maintaine
 -- Rebuild these in the same transaction as package updates.
 CREATE TABLE IF NOT EXISTS package_facets (
     repo_id           INTEGER NOT NULL,
-    kind              TEXT    NOT NULL, -- 'license', 'tag', 'maintainer', 'group', 'status', 'is_foss'
+    kind              TEXT    NOT NULL, -- 'license', 'tag', 'maintainer', 'group', 'status', 'is_nonfree'
     value             TEXT    NOT NULL,
     name              TEXT    NOT NULL, -- Copy of packages.name for sorting
     package_id        INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,

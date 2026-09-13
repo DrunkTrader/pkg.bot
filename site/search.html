@@ -68,10 +68,15 @@
               {% if p.installed_bytes %}<span class="package-size text-light">{{ p.installed_bytes | bytes }} installed</span>{% endif %}
             </td>
             <td class="col-license package-filters">
-              {%- for l in p.licenses %}
-              <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
-              {%- else %}<span class="text-light" aria-label="License unavailable">—</span>
-              {%- endfor %}
+              <div class="hstack">
+                {%- if p.is_nonfree %}
+                <a class="badge" data-variant="danger" href="{{ filter_url | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
+                {%- endif %}
+                {%- for l in p.licenses %}
+                <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
+                {%- else %}{% if not p.is_nonfree %}<span class="text-light" aria-label="License unavailable">—</span>{% endif %}
+                {%- endfor %}
+              </div>
             </td>
             <td class="package-filters col-maintainer">
               <div class="maintainers">

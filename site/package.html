@@ -46,7 +46,7 @@
               {%- for l in pkg.licenses %}
               <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}">{{ l }}</a>
               {%- endfor %}
-              {%- if pkg.is_foss is defined and pkg.is_foss %}<span class="badge" data-variant="success">FOSS</span>{% endif %}
+              {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge" data-variant="warning">Non-free</span>{% endif %}
             </td>
           </tr>
           {% endif %}

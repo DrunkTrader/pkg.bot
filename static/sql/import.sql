@@ -111,6 +111,9 @@ INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
     UNION ALL
     SELECT p.repo_id, 'status', p.status, p.name, p.id FROM packages p
     UNION ALL
+    SELECT p.repo_id, 'is_nonfree', CAST(p.is_nonfree AS TEXT), p.name, p.id
+    FROM packages p WHERE p.is_nonfree IS NOT NULL
+    UNION ALL
     SELECT p.repo_id, 'maintainer', m.slug, p.name, p.id
     FROM packages p
     INNER JOIN package_maintainers pm ON pm.package_id = p.id

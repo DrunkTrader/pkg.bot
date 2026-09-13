@@ -16,6 +16,21 @@ type Result<T> = std::result::Result<T, Box<dyn Error>>;
 /// Rows per SQLite INSERT statement.
 const CHUNK: usize = 1000;
 
+/// Strings to check against package/repo paths to determine `is_nonfree`.
+const NONFREE_MARKERS: &[&str] = &[
+    "nonfree",
+    "unfree",
+    "propriet",
+    "commercial",
+    "multiverse",
+    "eula",
+    "shareware",
+    "freeware",
+    "closedsource",
+    "nonredistributable",
+];
+
+
 /// Repology Repo.
 #[derive(sqlx::FromRow)]
 struct SrcRepo {
@@ -69,6 +84,7 @@ struct Package {
     version_norm: Option<String>,
     homepage_url: Option<String>,
     licenses: String,
+    is_nonfree: Option<bool>,
     platforms: String,
     groups: String,
     keywords: String,
@@ -401,7 +417,7 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
     for chunk in rows.chunks(CHUNK) {
         let mut q = QueryBuilder::<Sqlite>::new(
             "INSERT INTO packages (id, repo_id, slug, name, name_norm, excerpt, pkg_base, \
-             version, version_norm, homepage_url, licenses, platforms, \
+             version, version_norm, homepage_url, licenses, is_nonfree, platforms, \
              \"groups\", keywords, status, meta, identity_tokens, keyword_tokens, body_tokens) ",
         );
         q.push_values(chunk, |mut b, p| {
@@ -416,6 +432,7 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
                 .push_bind(p.version_norm.as_deref())
                 .push_bind(p.homepage_url.as_deref())
                 .push_bind(p.licenses.as_str())
+                .push_bind(p.is_nonfree)
                 .push_bind(p.platforms.as_str())
                 .push_bind(p.groups.as_str())
                 .push_bind(p.keywords.as_str())
@@ -508,6 +525,7 @@ fn transform_package(
         version: p.rawversion,
         version_norm: normalize_version(&p.version),
         homepage_url: p.homepage_url,
+        is_nonfree: is_nonfree(&p.family, &licenses, &subrepos),
         licenses: json!(licenses).to_string(),
         platforms: json!(platforms).to_string(),
         groups: json!(groups).to_string(),
@@ -563,6 +581,30 @@ fn get_distro<'a>(family: &'a str, slug: &'a str) -> &'a str {
         // debian_12, ubuntu_24_04, ...
         "debuntu" => slug.split('_').next().unwrap_or(slug),
         _ => family,
+    }
+}
+
+
+/// Guess if a package is non-free from its licenses and the subrepo names.
+fn is_nonfree(family: &str, licenses: &[String], subrepos: &[String]) -> Option<bool> {
+    let is_marked = |s: &str| {
+        let s = normalize_name(s);
+        NONFREE_MARKERS.iter().any(|m| s.contains(m))
+    };
+
+    let by_subrepo = subrepos.iter().any(|s| {
+        s.split('/').any(|seg| {
+            is_marked(seg)
+                // Ubuntu special case.
+                || (family == "debuntu" && normalize_name(seg) == "restricted")
+        })
+    });
+    let by_license = licenses.iter().any(|l| is_marked(l));
+
+    match (by_subrepo || by_license, licenses.is_empty()) {
+        (true, _) => Some(true),
+        (false, true) => None,
+        (false, false) => Some(false),
     }
 }
 
@@ -706,6 +748,59 @@ mod tests {
 
         assert_eq!(parse_maintainer("@user").slug, "@user");
         assert_eq!(parse_maintainer("a@b c").slug, "a@b c");
+    }
+
+    #[test]
+    fn nonfree() {
+        let l = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+
+        assert_eq!(is_nonfree("arch", &[], &[]), None);
+        assert_eq!(
+            is_nonfree("arch", &l(&["MIT"]), &l(&["main"])),
+            Some(false)
+        );
+        assert_eq!(is_nonfree("nix", &l(&["Unfree"]), &[]), Some(true));
+        assert_eq!(
+            is_nonfree("gentoo", &l(&["MSttfEULA"]), &[]),
+            Some(true)
+        );
+        assert_eq!(
+            is_nonfree("arch", &l(&["custom:proprietary"]), &[]),
+            Some(true)
+        );
+        assert_eq!(
+            is_nonfree("debuntu", &[], &l(&["noble/multiverse"])),
+            Some(true)
+        );
+        assert_eq!(
+            is_nonfree("debuntu", &l(&["GPL-2"]), &l(&["sid/non-free"])),
+            Some(true)
+        );
+        assert_eq!(
+            is_nonfree("fedora", &l(&["GPL-2"]), &l(&["nonfree/tainted"])),
+            Some(true)
+        );
+        assert_eq!(
+            is_nonfree("debuntu", &[], &l(&["trixie/non-free-firmware"])),
+            Some(true)
+        );
+        assert_eq!(is_nonfree("arch", &l(&["Non_Free"]), &[]), Some(true));
+        assert_eq!(
+            is_nonfree("debuntu", &l(&["GPL-2"]), &l(&["noble/restricted"])),
+            Some(true)
+        );
+        assert_eq!(
+            is_nonfree("openmandriva", &l(&["GPL-2"]), &l(&["restricted/release"])),
+            Some(false)
+        );
+        assert_eq!(
+            is_nonfree("debuntu", &l(&["GPL-2"]), &l(&["sid/contrib"])),
+            Some(false)
+        );
+        assert_eq!(
+            is_nonfree("arch", &l(&["Unrestricted Use"]), &[]),
+            Some(false)
+        );
     }
 
     #[test]

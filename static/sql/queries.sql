@@ -145,7 +145,7 @@ DELETE FROM facet_counts WHERE repo_id = $1;
 
 -- Read package payloads once and build facets.
 WITH selected AS MATERIALIZED (
-    SELECT repo_id, id, name, licenses, keywords, "groups", status, is_foss
+    SELECT repo_id, id, name, licenses, keywords, "groups", status, is_nonfree
     FROM packages WHERE repo_id = $1
 )
 INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
@@ -160,8 +160,8 @@ INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
     UNION ALL
     SELECT p.repo_id, 'status', p.status, p.name, p.id FROM selected p
     UNION ALL
-    SELECT p.repo_id, 'is_foss', CAST(p.is_foss AS TEXT), p.name, p.id
-    FROM selected p WHERE p.is_foss IS NOT NULL
+    SELECT p.repo_id, 'is_nonfree', CAST(p.is_nonfree AS TEXT), p.name, p.id
+    FROM selected p WHERE p.is_nonfree IS NOT NULL
     UNION ALL
     SELECT p.repo_id, 'maintainer', mt.slug, p.name, p.id
     FROM selected p

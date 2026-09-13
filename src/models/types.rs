@@ -166,7 +166,7 @@ pub struct Package {
     pub homepage_url: Option<String>,
 
     pub licenses: StringArray,
-    pub is_foss: Option<bool>,
+    pub is_nonfree: Option<bool>,
     pub platforms: StringArray,
 
     pub groups: StringArray,
@@ -219,7 +219,7 @@ pub struct PackageQuery {
 
     /// Accepts "true"/"false" or "1"/"0"; validate() converts these to "1"/"0".
     #[serde(default)]
-    pub is_foss: String,
+    pub is_nonfree: String,
 
     /// Keyset pagination fields.
     #[serde(default)]
@@ -246,17 +246,17 @@ pub struct PackageQuery {
 }
 
 impl PackageQuery {
-    /// Reject combined `q` and `name` searches and convert `is_foss` to "1"/"0".
+    /// Reject combined `q` and `name` searches and convert `is_nonfree` to "1"/"0".
     pub fn validate(&mut self) -> Result<(), &'static str> {
         if !self.q.trim().is_empty() && !self.name.trim().is_empty() {
             return Err("q and name cannot be used together");
         }
 
-        self.is_foss = match self.is_foss.trim() {
+        self.is_nonfree = match self.is_nonfree.trim() {
             "" => String::new(),
             "1" | "true" => "1".into(),
             "0" | "false" => "0".into(),
-            _ => return Err("is_foss must be true or false"),
+            _ => return Err("is_nonfree must be true or false"),
         };
 
         Ok(())
@@ -270,7 +270,7 @@ impl PackageQuery {
             ("maintainer", self.maintainer.trim()),
             ("group", self.group.trim()),
             ("status", self.status.trim()),
-            ("is_foss", self.is_foss.as_str()),
+            ("is_nonfree", self.is_nonfree.as_str()),
         ]
         .into_iter()
         .filter(|(_, v)| !v.is_empty())

@@ -68,11 +68,11 @@
   </div>
 
   <div data-field>
-    <label for="is_foss">Licensing</label>
-    <select id="is_foss" name="is_foss">
-      {%- for v in ["", "true", "false"] %}
-      <option value="{{ v }}"{% if v == q.is_foss or (v == "true" and q.is_foss == "1") or (v == "false" and q.is_foss == "0") %} selected{% endif %}>
-        {%- if v == "true" %}FOSS{% elif v == "false" %}Non-free{% else %}Any{% endif -%}
+    <label for="is_nonfree">Licensing</label>
+    <select id="is_nonfree" name="is_nonfree">
+      {%- for v in ["", "false", "true"] %}
+      <option value="{{ v }}"{% if v == q.is_nonfree or (v == "true" and q.is_nonfree == "1") or (v == "false" and q.is_nonfree == "0") %} selected{% endif %}>
+        {%- if v == "true" %}Non-free{% elif v == "false" %}Free{% else %}Any{% endif -%}
       </option>
       {%- endfor %}
     </select>
