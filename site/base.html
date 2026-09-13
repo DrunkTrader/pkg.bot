@@ -8,6 +8,9 @@
   <meta name="description" content="{% block description %}Search packages across Linux distributions and package repositories.{% endblock %}" />
 
   <link rel="icon" href="/static/favicon.svg?v={{ asset_ver }}" type="image/svg+xml" />
+  {%- if feed_url is defined %}
+  <link rel="alternate" type="application/rss+xml" title="{% block feed_title %}pkgbot feed{% endblock %}" href="{{ feed_url }}" />
+  {%- endif %}
   <link rel="stylesheet" href="/static/oat.min.css?v={{ asset_ver }}" type="text/css" />
   <link rel="stylesheet" href="/static/style.css?v={{ asset_ver }}" type="text/css" />
   <script defer src="/static/oat.min.js?v={{ asset_ver }}"></script>

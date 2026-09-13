@@ -27,6 +27,8 @@ yesqlr_macros = "0.2"
 log = "0.4"
 env_logger = "0.11"
 thiserror = "2"
+quick-xml = "0.42.0"
+urlencoding = "2.1.3"
 
 # Use mimalloc for musl builds (musl's default malloc is very slow).
 [target.'cfg(target_env = "musl")'.dependencies]

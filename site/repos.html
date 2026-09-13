@@ -2,17 +2,22 @@
 
 {% block title %}Repositories &mdash; pkgs{% endblock %}
 {% block description %}All {{ repo_list | length }} Linux package repositories indexed here, with their package and maintainer counts.{% endblock %}
+{% block feed_title %}Repositories — pkgbot{% endblock %}
 
 {% block content %}
 <section class="results">
   <h1>Repositories</h1>
   <div class="hstack justify-between mb-4">
-    <p id="repos-summary" class="summary text-light">
-      <strong>{{ repo_list | length | num }}</strong> repositor{{ repo_list | length | pluralize(singular="y", plural="ies") }} with
-      <strong>{{ total_packages | num }}</strong> package{{ total_packages | pluralize }} indexed.
-    </p>
+    <div class="hstack">
+      <p id="repos-summary" class="summary text-light">
+        <strong>{{ repo_list | length | num }}</strong> repositor{{ repo_list | length | pluralize(singular="y", plural="ies") }} with
+        <strong>{{ total_packages | num }}</strong> package{{ total_packages | pluralize }} indexed.
+      </p>
 
-    {% include "current-filters.html" %}
+      {% include "current-filters.html" %}
+    </div>
+
+    {% include "feed-link.html" %}
   </div>
 
   <div class="packages-wrap card" role="region" aria-labelledby="repos-summary" tabindex="0">

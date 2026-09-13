@@ -1,6 +1,7 @@
 mod cli;
 mod config;
 mod db;
+mod feed;
 mod handlers;
 mod http;
 mod importer;
@@ -92,7 +93,10 @@ async fn main() {
     let mgr = Arc::new(Manager::new(db));
 
     // Load the repos once. They only change when an indexer adds one.
-    let repos = match mgr.get_repos(&Sort::asc("name"), &RepoQuery::default()).await {
+    let repos = match mgr
+        .get_repos(&Sort::asc("name"), &RepoQuery::default())
+        .await
+    {
         Ok(r) => r,
         Err(e) => {
             log::error!("error loading repos: {}", e);

@@ -2,14 +2,17 @@ use std::{sync::Arc, time::Duration};
 
 use axum::{
     extract::{Path, RawQuery, State},
-    http::StatusCode,
+    http::{header, StatusCode, Uri},
     response::{Html, IntoResponse, Response},
     Extension,
 };
 use axum_extra::extract::Query;
 
 use super::{list_packages, paginate, Ctx, ReqStarted};
-use crate::models::{url_template, PackageQuery, PackageResults, RepoQuery, Sort, REPO_SORT_FIELDS};
+use crate::feed::{Feed, Item};
+use crate::models::{
+    url_template, Package, PackageQuery, PackageResults, Repo, RepoQuery, Sort, REPO_SORT_FIELDS,
+};
 
 /// Landing page.
 pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
@@ -26,10 +29,15 @@ pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
 /// Repository directory.
 pub async fn render_repos(
     State(ctx): State<Arc<Ctx>>,
+    uri: Uri,
     Query(sort): Query<Sort>,
     Query(filter): Query<RepoQuery>,
 ) -> Response {
     let sort = sort.clamp(&REPO_SORT_FIELDS, "");
+
+    // `/repos.xml` is the RSS feed for the same results.
+    // This is added as a hack as axum can't register `{dynamic}.xml` routes.
+    let feed = uri.path().ends_with(".xml");
 
     // Sort and filter.
     let repos = match if sort.order_by.is_empty() {
@@ -48,6 +56,10 @@ pub async fn render_repos(
             );
         }
     };
+
+    if feed {
+        return render_feed(render_repos_rss(&ctx, &repos, &filter.to_query()));
+    }
 
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "repositories");
@@ -73,6 +85,13 @@ pub async fn render_repos(
     tpl_ctx.insert(
         "total_packages",
         &repos.iter().map(|r| r.package_count).sum::<i64>(),
+    );
+    tpl_ctx.insert(
+        "feed_url",
+        &feed_url(
+            &format!("{}/repos.xml", ctx.consts.root_url),
+            &filter.to_query(),
+        ),
     );
 
     render(&ctx, "repos.html", &mut tpl_ctx)
@@ -115,7 +134,13 @@ pub async fn render_search(
     RawQuery(raw_query): RawQuery,
     Query(mut q): Query<PackageQuery>,
 ) -> Response {
-    let repo = match ctx.repo(&repo_slug) {
+    // `/repos/{repo}.xml` returns results as an RSS feed.
+    let (repo_slug, feed) = match repo_slug.strip_suffix(".xml") {
+        Some(slug) => (slug, true),
+        None => (repo_slug.as_str(), false),
+    };
+
+    let repo = match ctx.repo(repo_slug) {
         Some(r) => r,
         None => return not_found(&ctx, "Unknown repository."),
     };
@@ -145,6 +170,17 @@ pub async fn render_search(
             PackageResults::default()
         }
     };
+
+    let raw_query = raw_query.unwrap_or_default();
+    if feed {
+        return render_feed(render_packages_rss(
+            &ctx,
+            repo,
+            &results,
+            q.search().0,
+            &raw_query,
+        ));
+    }
 
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "search");
@@ -184,8 +220,14 @@ pub async fn render_search(
             "{}/repos/{}?{}",
             ctx.consts.root_url,
             repo.slug,
-            strip_pagination(&raw_query.unwrap_or_default())
+            strip_pagination(&raw_query)
         ),
+    );
+
+    // Feed URL to render on the page.
+    tpl_ctx.insert(
+        "feed_url",
+        &feed_url(&format!("{}.xml", base_url), &raw_query),
     );
 
     render(&ctx, "results.html", &mut tpl_ctx)
@@ -304,6 +346,128 @@ fn render_message(ctx: &Ctx, status: StatusCode, title: &str, message: &str) -> 
 
 fn not_found(ctx: &Ctx, message: &str) -> Response {
     render_message(ctx, StatusCode::NOT_FOUND, "Not found", message)
+}
+
+/// Render the RSS feed for repo lists.
+fn render_repos_rss(ctx: &Ctx, repos: &[Repo], query: &str) -> Feed {
+    let link = format!("{}/repos", ctx.consts.root_url);
+
+    Feed {
+        title: "Repositories - pkg.bot".into(),
+        description: format!(
+            "All {} Linux package repositories indexed here, with their package and maintainer counts.",
+            repos.len()
+        ),
+        self_link: feed_url(&format!("{}.xml", link), query),
+        items: repos
+            .iter()
+            .map(|r| {
+                let url = format!("{}/repos/{}", ctx.consts.root_url, r.slug);
+
+                Item {
+                    title: match &r.branch {
+                        Some(b) => format!("{} ({})", r.name, b),
+                        None => r.name.clone(),
+                    },
+                    description: format!(
+                        "{} packages and {} maintainers, managed with {}.",
+                        r.package_count, r.num_maintainers, r.manager
+                    ),
+                    guid: url.clone(),
+                    permalink: true,
+                    link: url,
+                    categories: [Some(&r.family), r.distro.as_ref()]
+                        .into_iter()
+                        .flatten()
+                        .cloned()
+                        .collect(),
+                    pub_date: r.updated_at.clone(),
+                }
+            })
+            .collect(),
+        link,
+    }
+}
+
+/// Render the RSS feed for package listings within a repository.
+fn render_packages_rss(
+    ctx: &Ctx,
+    repo: &Repo,
+    results: &PackageResults,
+    term: &str,
+    query: &str,
+) -> Feed {
+    let link = format!("{}/repos/{}", ctx.consts.root_url, repo.slug);
+
+    Feed {
+        title: if term.is_empty() {
+            format!("{} packages - pkg.bot", repo.name)
+        } else {
+            format!("{} · {} packages - pkg.bot", term, repo.name)
+        },
+        description: if term.is_empty() {
+            format!("Packages in {}.", repo.name)
+        } else {
+            format!("Packages matching \"{}\" in {}.", term, repo.name)
+        },
+        self_link: feed_url(&format!("{}.xml", link), query),
+        items: results
+            .packages
+            .iter()
+            .map(|p| package_item(&link, p))
+            .collect(),
+        link,
+    }
+}
+
+fn package_item(repo_url: &str, p: &Package) -> Item {
+    // Package slugs are not URL-safe (eg: nix's `emacsPackages."0blayout"`).
+    let url = format!("{}/{}", repo_url, urlencoding::encode(&p.slug));
+
+    Item {
+        title: match &p.version {
+            Some(v) => format!("{} {}", p.name, v),
+            None => p.name.clone(),
+        },
+        // Make version a part of guid so that updates show up as new items in the feed.
+        guid: match &p.version {
+            Some(v) => format!("{}@{}", url, v),
+            None => url.clone(),
+        },
+        permalink: false,
+        link: url,
+        description: p
+            .excerpt
+            .clone()
+            .or_else(|| p.description.clone())
+            .unwrap_or_default(),
+        categories: p.keywords.0.clone(),
+        pub_date: p.updated_at.clone(),
+    }
+}
+
+/// Serialize a feed into an RSS response.
+fn render_feed(feed: Feed) -> Response {
+    match feed.to_xml() {
+        Ok(xml) => (
+            [(header::CONTENT_TYPE, "application/rss+xml; charset=utf-8")],
+            xml,
+        )
+            .into_response(),
+        Err(e) => {
+            log::error!("error rendering feed: {}", e);
+
+            (StatusCode::INTERNAL_SERVER_ERROR, "error rendering feed").into_response()
+        }
+    }
+}
+
+/// Build a feed's own URL.
+fn feed_url(base: &str, query: &str) -> String {
+    match query.trim_end_matches('&') {
+        "" => base.to_string(),
+        q => format!("{}?{}", base, q),
+    }
 }
 
 /// Drop pagination params from a raw query string so that pagination links can

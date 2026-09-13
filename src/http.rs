@@ -29,6 +29,8 @@ pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
                 .route("/", get(site::index))
                 .route("/search", get(site::render_search_form))
                 .route("/repos", get(site::render_repos))
+                // `/repos/{repo}.xml` is handled inside render_search as axum can't do dynamic suffixes.
+                .route("/repos.xml", get(site::render_repos))
                 .route("/repos/{repo}", get(site::render_search))
                 .route("/repos/{repo}/{pkg}", get(site::get_package))
                 .route("/static/{*path}", get(serve_static))

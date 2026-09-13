@@ -2,17 +2,22 @@
 
 {% block title %}{% if term %}{{ term }} &middot; {% endif %}{{ repo.name }} packages &mdash; pkgs{% endblock %}
 {% block description %}{% if term %}Packages matching &quot;{{ term }}&quot; in {{ repo.name }}.{% else %}{{ results.total }}{% if results.total_capped %}+{% endif %} package{{ results.total | pluralize }}{% if term %} matching &quot;{{ term }}&quot;{% endif %} in {{ repo.name }}.{% endif %}{% endblock %}
+{% block feed_title %}{% if term %}{{ term }} · {% endif %}{{ repo.name }} packages — pkgbot{% endblock %}
 
 {% block content %}
 <section class="results">
-  <div class="hstack mb-4">
-    <p id="results-summary" class="summary text-light">
-      {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
-      {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
-      {%- if repo.brand_color %} <span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span>{% endif %} {{ repo.name }}
-    </p>
+  <div class="hstack justify-between mb-4">
+    <div class="hstack">
+      <p id="results-summary" class="summary text-light">
+        {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
+        {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
+        {%- if repo.brand_color %} <span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span>{% endif %} {{ repo.name }}
+      </p>
 
-    {% include "current-filters.html" %}
+      {% include "current-filters.html" %}
+    </div>
+
+    {% include "feed-link.html" %}
   </div>
 
   {% if results.packages | length == 0 %}

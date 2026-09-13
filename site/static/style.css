@@ -24,6 +24,21 @@ body {
 .icon-avatar { --icon: url("/static/avatar.svg"); }
 .icon-globe { --icon: url("/static/globe.svg"); }
 
+/* The feed icon keeps its brand orange instead of inheriting currentColor. */
+.icon-rss {
+  --icon: url("/static/rss.svg");
+  background-color: #f26522;
+}
+
+.feed-link {
+  flex: none;
+  opacity: 0.85;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
 /* Header */
 .header {
   margin: var(--space-8) 0;
