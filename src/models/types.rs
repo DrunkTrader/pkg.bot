@@ -184,7 +184,6 @@ pub struct Package {
 
     pub created_at: String,
     pub updated_at: String,
-    pub built_at: String,
 }
 
 /// Package search query parameters.

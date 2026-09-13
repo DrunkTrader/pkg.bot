@@ -69,6 +69,8 @@ struct SrcPackage {
     subrepo: Option<String>,
     arch: Option<String>,
     homepage_url: Option<String>,
+    created_at: Option<String>,
+    updated_at: Option<String>,
 }
 
 /// SQLite package.
@@ -94,6 +96,8 @@ struct Package {
     keyword_tokens: Option<String>,
     body_tokens: Option<String>,
     maintainers: Vec<i64>,
+    created_at: Option<String>,
+    updated_at: Option<String>,
 }
 
 /// Import active Repology repos filtered by the given families.
@@ -418,7 +422,8 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
         let mut q = QueryBuilder::<Sqlite>::new(
             "INSERT INTO packages (id, repo_id, slug, name, name_norm, excerpt, pkg_base, \
              version, version_norm, homepage_url, licenses, is_nonfree, platforms, \
-             \"groups\", keywords, status, meta, identity_tokens, keyword_tokens, body_tokens) ",
+             \"groups\", keywords, status, meta, identity_tokens, keyword_tokens, body_tokens, \
+             created_at, updated_at) ",
         );
         q.push_values(chunk, |mut b, p| {
             b.push_bind(p.id)
@@ -440,7 +445,9 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
                 .push_bind(p.meta.as_str())
                 .push_bind(p.identity_tokens.as_deref())
                 .push_bind(p.keyword_tokens.as_deref())
-                .push_bind(p.body_tokens.as_deref());
+                .push_bind(p.body_tokens.as_deref())
+                .push_bind(p.created_at.as_deref())
+                .push_bind(p.updated_at.as_deref());
         });
         q.build().execute(&mut *tx).await?;
     }
@@ -537,6 +544,8 @@ fn transform_package(
         },
         meta,
         maintainers: ids,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
     };
 
     (row, unknown)

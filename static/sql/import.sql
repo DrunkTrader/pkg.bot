@@ -78,8 +78,17 @@ SELECT p.id, p.repo, p.family, p.srcname, p.binnames, p.trackname, p.visiblename
                ) WITH ORDINALITY AS e(link, ord)
           INNER JOIN repology.links k ON k.id = (e.link->>1)::INT
          WHERE (e.link->>0)::INT = 0
-         ORDER BY e.ord LIMIT 1) AS homepage_url
+         ORDER BY e.ord LIMIT 1) AS homepage_url,
+       TO_CHAR(COALESCE(rt.start_ts, rtv.start_ts) AT TIME ZONE 'UTC',
+               'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at,
+       TO_CHAR(COALESCE(rtv.start_ts, rt.start_ts) AT TIME ZONE 'UTC',
+               'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at
 FROM ranked p
+INNER JOIN repology.repositories r ON r.name = p.repo
+LEFT JOIN repology.repo_tracks rt
+       ON rt.repository_id = r.id AND rt.trackname = p.trackname
+LEFT JOIN repology.repo_track_versions rtv
+       ON rtv.repository_id = r.id AND rtv.trackname = p.trackname AND rtv.version = p.version
 WHERE p.rank = 1;
 
 

@@ -83,8 +83,8 @@
           {% endif %}
           {% if pkg.download_bytes %}<tr><th>Download size</th><td>{{ pkg.download_bytes | bytes }}</td></tr>{% endif %}
           {% if pkg.installed_bytes %}<tr><th>Installed size</th><td>{{ pkg.installed_bytes | bytes }}</td></tr>{% endif %}
-          <tr><th>Built</th><td>{{ pkg.built_at | truncate(length=10, end="") }}</td></tr>
-          <tr><th>Updated</th><td>{{ pkg.updated_at | truncate(length=10, end="") }}</td></tr>
+          <tr><th>First seen</th><td>{{ pkg.created_at | truncate(length=10, end="") }}</td></tr>
+          <tr><th>Last changed</th><td>{{ pkg.updated_at | truncate(length=10, end="") }}</td></tr>
           {%- for key, val in pkg.meta %}
           <tr><th>{{ key | replace(from="_", to=" ") | capitalize }}</th><td>{{ val }}</td></tr>
           {%- endfor %}

@@ -76,9 +76,11 @@ CREATE TABLE IF NOT EXISTS packages (
     meta              TEXT    NOT NULL DEFAULT '{}' CHECK (json_valid(meta)),
     hash              TEXT,                       -- use this to skip re-indexing if the hash matches the previous one
 
+    -- These timestamps refelect upstream packages, not the local state.
+    -- created_at is repology's first_seen.
     created_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    -- updated_at is when repology detected a version change in the upstrea,
     updated_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    built_at          TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
 
     UNIQUE (repo_id, slug)
 ) STRICT;
