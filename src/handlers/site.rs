@@ -75,7 +75,7 @@ pub async fn render_repos(
         &repos.iter().map(|r| r.package_count).sum::<i64>(),
     );
 
-    render(&ctx, "repositories.html", &mut tpl_ctx)
+    render(&ctx, "repos.html", &mut tpl_ctx)
 }
 
 /// Standalone advanced search form.
@@ -188,7 +188,7 @@ pub async fn render_search(
         ),
     );
 
-    render(&ctx, "search.html", &mut tpl_ctx)
+    render(&ctx, "results.html", &mut tpl_ctx)
 }
 
 /// Individual package page.

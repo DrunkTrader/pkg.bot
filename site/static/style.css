@@ -46,13 +46,13 @@ body {
 }
 
 /* Search form */
-.search-form {
+.search-bar {
   fieldset.group {
     margin-block: var(--space-1);
   }
 
   a {
-    font-size: var(--text-8);
+    font-size: var(--text-7);
   }
 
   select {
