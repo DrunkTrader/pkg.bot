@@ -1,5 +1,5 @@
 -- name: get-repos
-SELECT * FROM repos ORDER BY score DESC, name;
+SELECT * FROM repos ORDER BY name COLLATE NOCASE;
 
 -- name: get-package
 -- $1: repo_id

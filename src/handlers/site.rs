@@ -27,6 +27,11 @@ pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
 pub async fn render_repos(State(ctx): State<Arc<Ctx>>) -> Response {
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "repositories");
+    tpl_ctx.insert(
+        "total_packages",
+        &ctx.repos.iter().map(|r| r.package_count).sum::<i64>(),
+    );
+
     render(&ctx, "repositories.html", &mut tpl_ctx)
 }
 
@@ -186,9 +191,9 @@ fn base_context(ctx: &Ctx) -> tera::Context {
     tpl_ctx.insert("repos", &ctx.repos);
     tpl_ctx.insert("asset_ver", &ctx.asset_ver);
 
-    // The search form is on every page. Give it an empty query and the
-    // highest ranked repo to start with. Pages that have a query and a repo
-    // of their own overwrite these.
+    // The search form is on every page. Give it an empty query and the first
+    // repo to start with. Pages that have a query and a repo of their own
+    // overwrite these.
     tpl_ctx.insert("q", &PackageQuery::default());
     insert_search(&mut tpl_ctx, &PackageQuery::default());
     if let Some(repo) = ctx.repos.first() {

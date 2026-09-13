@@ -109,12 +109,60 @@ body.index {
 }
 
 /* Repository directory */
-.repositories-table {
-  overflow-x: auto;
+.repos-table {
+  .col-repo { width: 34%; }
+  .col-distro { width: 16%; }
+  .col-manager { width: 12%; }
+  .col-packages { width: 13%; }
+  .col-maintainers { width: 13%; }
+  .col-synced { width: 12%; }
 
-  th,
-  td {
+  .repo-details {
+    font-weight: var(--font-normal);
+  }
+
+  .repo-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .repo-name {
+    font-size: var(--text-6);
+    font-weight: var(--font-semibold);
+  }
+
+  .repo-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: var(--space-1) 0 0;
+
+    code {
+      padding: 0;
+      background: none;
+      color: var(--muted-foreground);
+    }
+  }
+
+  td.col-distro,
+  td.col-manager,
+  .repo-links {
+    font-size: var(--text-7);
+  }
+
+  .repo-family {
+    display: block;
+    color: var(--muted-foreground);
+  }
+
+  .col-packages,
+  .col-maintainers,
+  .col-synced {
+    text-align: right;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 }
 

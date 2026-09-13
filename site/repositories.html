@@ -1,36 +1,68 @@
 {% extends "base.html" %}
 
-{% block title %}Repositories &mdash; pkgbot{% endblock %}
-{% block description %}Browse Linux package repositories, package counts, and sync dates.{% endblock %}
+{% block title %}Repositories &mdash; pkgs{% endblock %}
+{% block description %}All {{ repos | length }} Linux package repositories indexed here, with their package and maintainer counts.{% endblock %}
 
 {% block content %}
-<h1>Repositories</h1>
-<div class="repositories-table" role="region" aria-label="Repositories" tabindex="0">
-  <table>
-    <thead>
-      <tr>
-        <th scope="col">Repository</th>
-        <th scope="col">Distribution</th>
-        <th scope="col">Branch</th>
-        <th scope="col">Manager</th>
-        <th scope="col" class="align-right">Packages</th>
-        <th scope="col">Last synced</th>
-      </tr>
-    </thead>
-    <tbody>
-      {%- for r in repos %}
-      <tr>
-        <th scope="row"><a href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.name }}</a></th>
-        <td>{{ r.distro | default(value="—") }}</td>
-        <td>{{ r.branch | default(value="—") }}</td>
-        <td>{{ r.manager }}</td>
-        <td class="align-right"><a href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.package_count | num }}</a></td>
-        <td>{{ r.synced_at | truncate(length=10, end="") }}</td>
-      </tr>
-      {%- else %}
-      <tr><td colspan="6">No repositories available.</td></tr>
-      {%- endfor %}
-    </tbody>
-  </table>
-</div>
+<section class="results">
+  <h1>Repositories</h1>
+  <p id="repos-summary" class="summary text-light">
+    <strong>{{ repos | length | num }}</strong> repositor{{ repos | length | pluralize(singular="y", plural="ies") }} with
+    <strong>{{ total_packages | num }}</strong> package{{ total_packages | pluralize }} indexed.
+  </p>
+
+  <div class="packages-wrap card" role="region" aria-labelledby="repos-summary" tabindex="0">
+    <table class="packages repos-table" aria-labelledby="repos-summary">
+      <colgroup>
+        <col class="col-repo" />
+        <col class="col-distro" />
+        <col class="col-manager" />
+        <col class="col-packages" />
+        <col class="col-maintainers" />
+        <col class="col-synced" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col" class="col-repo">Repository</th>
+          <th scope="col" class="col-distro">Distribution</th>
+          <th scope="col" class="col-manager">Manager</th>
+          <th scope="col" class="col-packages">Packages</th>
+          <th scope="col" class="col-maintainers">Maintainers</th>
+          <th scope="col" class="col-synced">Synced</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for r in repos %}
+        <tr>
+          <th scope="row" class="col-repo repo-details">
+            <div class="repo-heading">
+              <span class="avatar" style="background: {{ r.brand_color | default(value='#bbb') }}" aria-hidden="true"></span>
+              <a class="repo-name" href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.name }}</a>
+              {%- if r.branch %}<span class="badge outline">{{ r.branch }}</span>{% endif %}
+            </div>
+            <p class="repo-links">
+              <code>{{ r.slug }}</code>
+              {%- if r.homepage_url %}<a href="{{ r.homepage_url }}" rel="noreferrer noopener">Homepage</a>{% endif %}
+            </p>
+          </th>
+          <td class="col-distro">
+            {{ r.distro | default(value="—") }}
+            {%- if r.family != r.distro %}<span class="repo-family text-light">{{ r.family }}</span>{% endif %}
+          </td>
+          <td class="col-manager"><code>{{ r.manager }}</code></td>
+          <td class="col-packages">
+            <a href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.package_count | num }}</a>
+          </td>
+          <td class="col-maintainers">{% if r.num_maintainers %}{{ r.num_maintainers | num }}{% else %}<span class="text-light" aria-label="Maintainer count unavailable">—</span>{% endif %}</td>
+          <td class="col-synced text-light">
+            <time datetime="{{ r.synced_at | truncate(length=10, end="") }}">{{ r.synced_at | truncate(length=10, end="") }}</time>
+          </td>
+        </tr>
+        {%- else %}
+        <tr><td colspan="6" class="align-center">No repositories available.</td></tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+  </div>
+</section><!-- results -->
 {% endblock %}
