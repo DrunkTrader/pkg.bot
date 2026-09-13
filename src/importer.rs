@@ -9,7 +9,7 @@ use sqlx::{
 };
 use tokio::sync::mpsc;
 
-use crate::models::{url_template, Maintainer, IMPORT, SCHEMA};
+use crate::models::{url_template, ImportConfig, Maintainer, IMPORT, SCHEMA};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -106,12 +106,16 @@ struct Package {
 
 /// Import active Repology repos filtered by the given families.
 /// In the Repology DB, it's in `repositories.metadata->family` JSONB field.
-pub async fn run(dsn: &str, db_path: &Path, families: &[String]) -> Result<()> {
-    if families.is_empty() {
+pub async fn run(dsn: &str, db_path: &Path, conf: &ImportConfig) -> Result<()> {
+    if conf.families.is_empty() {
         return Err("import.families is empty".into());
     }
 
-    log::info!("import families: {:?}", families);
+    log::info!(
+        "import families: {:?} (min {} packages per repo)",
+        conf.families,
+        conf.min_packages
+    );
 
     let start = Instant::now();
     let mut db = init_db(db_path).await?;
@@ -140,7 +144,7 @@ pub async fn run(dsn: &str, db_path: &Path, families: &[String]) -> Result<()> {
     // Drop indexes.
     let deferred = drop_triggers_idx(&mut db).await?;
 
-    let repos = import_repos(&mut pg, &mut db, families).await?;
+    let repos = import_repos(&mut pg, &mut db, conf).await?;
     let maintainers = import_maintainers(&mut pg, &mut db).await?;
     let total = import_packages(pg, &mut db, &repos, &maintainers).await?;
 
@@ -227,14 +231,15 @@ async fn drop_triggers_idx(db: &mut SqliteConnection) -> Result<Vec<String>> {
 async fn import_repos(
     pg: &mut PgConnection,
     db: &mut SqliteConnection,
-    families: &[String],
+    conf: &ImportConfig,
 ) -> Result<HashMap<String, i64>> {
     let src: Vec<SrcRepo> = sqlx::query_as(&IMPORT.pg_get_repos.query)
-        .bind(families)
+        .bind(&conf.families)
+        .bind(conf.min_packages)
         .fetch_all(&mut *pg)
         .await?;
     if src.is_empty() {
-        return Err("no active repositories match import.families".into());
+        return Err("no active repositories match import.families and import.min_packages".into());
     }
 
     let mut tx = db.begin().await?;

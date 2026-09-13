@@ -37,7 +37,7 @@ async fn main() {
             // Import Repology PG dump into a new SQLite db.
             Commands::Import { pg } => {
                 let config = config::load_all(&cli.config);
-                if let Err(e) = importer::run(&pg, &cli.db_path, &config.import.families).await {
+                if let Err(e) = importer::run(&pg, &cli.db_path, &config.import).await {
                     log::error!("import failed: {e}");
                     std::process::exit(1);
                 }

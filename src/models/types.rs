@@ -475,4 +475,7 @@ impl Default for SiteResultsConfig {
 pub struct ImportConfig {
     #[serde(default)]
     pub families: Vec<String>,
+
+    #[serde(default)]
+    pub min_packages: i32,
 }

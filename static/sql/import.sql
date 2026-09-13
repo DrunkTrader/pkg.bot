@@ -12,7 +12,8 @@ PRAGMA analysis_limit     = 1000;     -- bound the closing PRAGMA optimize
 
 
 -- name: pg-get-repos
--- $1: repology.repositories.metadata->>'family' values to filter by..
+-- $1: repology.repositories.metadata->>'family' values to filter by.
+-- $2: minimum number of packages a repo should have.
 SELECT id::BIGINT                       AS id,
        name                             AS slug,
        COALESCE("desc", name)           AS name,
@@ -34,7 +35,7 @@ SELECT id::BIGINT                       AS id,
          WHERE (pl->>'type')::INT IN (7, 9)
          ORDER BY (pl->>'type')::INT DESC, (pl->>'priority')::INT, pl->>'url' LIMIT 1) AS source_url_template
 FROM repology.repositories
-WHERE state = 'active' AND metadata->>'family' = ANY($1) ORDER BY id;
+WHERE state = 'active' AND metadata->>'family' = ANY($1) AND num_packages >= $2 ORDER BY id;
 
 
 -- name: pg-check-libversion

@@ -36,3 +36,6 @@ max_per_page = 50
 
 [import]
 families = ["debuntu", "nix", "arch", "alpine", "fedora", "centos", "gentoo", "opensuse", "mageia", "openmandriva", "openwrt", "void", "solus", "slackware", "slackbuilds", "freebsd", "openbsd", "macports"]
+
+# Only import repos that have at least this many packages.
+min_packages = 2000
