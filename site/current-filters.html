@@ -1,0 +1,10 @@
+{%- if filters | length > 0 %}
+<div class="filters hstack">
+  {%- for f in filters %}
+  <span class="badge outline filter-badge"><strong class="text-light">{{ f.key | capitalize }}:</strong> {{ f.value }}<a href="{{ filters_url | safe }}{{ f.query | safe }}" title="Remove filter" aria-label="Remove {{ f.key }} filter">&times;</a></span>
+  {%- endfor %}
+  {%- if filters | length > 1 %}
+  <a class="text-light" href="{{ clear_url | safe }}">Clear all</a>
+  {%- endif %}
+</div>
+{%- endif %}

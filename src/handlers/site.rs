@@ -53,8 +53,19 @@ pub async fn render_repos(
     tpl_ctx.insert("page_type", "repositories");
     tpl_ctx.insert("repo_list", &repos);
     tpl_ctx.insert("sort", &sort);
-    tpl_ctx.insert("filter", &filter);
-    tpl_ctx.insert("has_filter", &!filter.is_empty());
+    // Applied filter badges (current-filters.html).
+    tpl_ctx.insert("filters", &filter.current_filters());
+    tpl_ctx.insert("filters_url", &format!("{}/repos?", ctx.consts.root_url));
+    tpl_ctx.insert("clear_url", &format!("{}/repos", ctx.consts.root_url));
+    tpl_ctx.insert(
+        "add_url",
+        &filter
+            .add_queries()
+            .into_iter()
+            .map(|(k, v)| (k, format!("{}/repos?{}", ctx.consts.root_url, v)))
+            .collect::<std::collections::HashMap<_, _>>(),
+    );
+
     tpl_ctx.insert(
         "sort_url",
         &format!("{}/repos?{}", ctx.consts.root_url, filter.to_query()),
@@ -141,6 +152,28 @@ pub async fn render_search(
     tpl_ctx.insert("q", &q);
     insert_search(&mut tpl_ctx, &q);
     tpl_ctx.insert("results", &results);
+
+    // Current filters.
+    let base_url = format!("{}/repos/{}", ctx.consts.root_url, repo.slug);
+    let term_query = q.to_query();
+    tpl_ctx.insert("filters", &q.applied_filters());
+    tpl_ctx.insert("filters_url", &format!("{}?", base_url));
+    tpl_ctx.insert(
+        "clear_url",
+        &if term_query.is_empty() {
+            base_url.clone()
+        } else {
+            format!("{}?{}", base_url, term_query)
+        },
+    );
+    tpl_ctx.insert(
+        "add_url",
+        &q.add_queries()
+            .into_iter()
+            .map(|(k, v)| (k, format!("{}?{}", base_url, v)))
+            .collect::<std::collections::HashMap<_, _>>(),
+    );
+
     tpl_ctx.insert("render_time", &fmt_duration(started.0.elapsed()));
 
     // Prefix that pagination links append their own cursor or page param to,

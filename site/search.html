@@ -4,17 +4,16 @@
 {% block description %}{% if term %}Packages matching &quot;{{ term }}&quot; in {{ repo.name }}.{% else %}{{ results.total }}{% if results.total_capped %}+{% endif %} package{{ results.total | pluralize }}{% if term %} matching &quot;{{ term }}&quot;{% endif %} in {{ repo.name }}.{% endif %}{% endblock %}
 
 {% block content %}
-{# Prefix for links that filter the current search further. #}
-{% set enc_query = term | urlencode %}
-{# Every value interpolated into it is URL encoded, so it is output unescaped. #}
-{% set filter_url = consts.root_url ~ "/repos/" ~ repo.slug ~ "?" ~ scope ~ "=" ~ enc_query ~ "&" %}
-
 <section class="results">
-  <p id="results-summary" class="summary text-light">
-    {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
-    {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
-    {%- if repo.brand_color %} <span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span>{% endif %} {{ repo.name }}
-  </p>
+  <div class="hstack justify-between mb-4">
+    <p id="results-summary" class="summary text-light">
+      {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
+      {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
+      {%- if repo.brand_color %} <span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span>{% endif %} {{ repo.name }}
+    </p>
+
+    {% include "current-filters.html" %}
+  </div>
 
   {% if results.packages | length == 0 %}
     <article class="card align-center">
@@ -57,9 +56,9 @@
               </p>
               {% endif %}
               {% if p.keywords | length > 0 %}
-              <div class="package-tags">
+              <div class="package-tags hstack mt-2">
                 {%- for k in p.keywords | slice(end=4) %}
-                <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}" title="Filter by tag">{{ k }}</a>
+                <a data-variant="secondary" href="{{ add_url.tag | safe }}tag={{ k | urlencode }}" title="Filter by tag">#{{ k }}</a>
                 {%- endfor %}
               </div>
               {% endif %}
@@ -71,10 +70,10 @@
             <td class="col-license package-filters">
               <div class="hstack">
                 {%- if p.is_nonfree %}
-                <a class="badge" data-variant="danger" href="{{ filter_url | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
+                <a class="badge" data-variant="danger" href="{{ add_url.is_nonfree | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
                 {%- endif %}
                 {%- for l in p.licenses %}
-                <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
+                <a class="badge outline" href="{{ add_url.license | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
                 {%- else %}{% if not p.is_nonfree %}<span class="text-light" aria-label="License unavailable">—</span>{% endif %}
                 {%- endfor %}
               </div>
@@ -82,7 +81,7 @@
             <td class="package-filters col-maintainer">
               <div class="maintainers">
               {%- for m in p.maintainers | slice(end=2) %}
-                <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer"><span class="icon icon-avatar" aria-hidden="true"></span><span class="maintainer-name">{{ m.name | default(value=m.handle) }}</span></a>
+                <a href="{{ add_url.maintainer | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer"><span class="icon icon-avatar" aria-hidden="true"></span><span class="maintainer-name">{{ m.name | default(value=m.handle) }}</span></a>
               {%- else %}<span class="text-light" aria-label="Maintainer unavailable">—</span>
               {%- endfor %}
               </div>

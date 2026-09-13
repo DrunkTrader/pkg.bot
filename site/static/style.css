@@ -173,7 +173,16 @@ body.index {
 
 .summary {
   font-size: var(--text-7);
-  margin-bottom: var(--space-4);
+}
+
+.filters {
+  gap: var(--space-2);
+  font-size: var(--text-7);
+
+  .filter-badge {
+    background: var(--background);
+    gap: var(--space-2);
+  }
 }
 
 .avatar {
@@ -267,7 +276,6 @@ body.index {
   }
 
   .excerpt {
-    color: var(--muted-foreground);
     line-height: 1.5;
   }
 
@@ -278,10 +286,7 @@ body.index {
   }
 
   .package-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1);
-    margin-top: var(--space-2);
+    font-size: var(--text-8);
   }
 
   td.col-version,

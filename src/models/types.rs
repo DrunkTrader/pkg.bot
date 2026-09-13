@@ -136,6 +136,20 @@ pub const REPO_SORT_FIELDS: [&str; 6] = [
     "updated_at",
 ];
 
+/// Repo listing filters.
+pub const REPO_FILTERS: [&str; 3] = ["family", "distro", "manager"];
+
+/// Package search filters.
+pub const PACKAGE_FILTERS: [&str; 7] = [
+    "license",
+    "tag",
+    "maintainer",
+    "group",
+    "platform",
+    "status",
+    "is_nonfree",
+];
+
 /// `?order_by=&order=` on a listing page.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
@@ -178,20 +192,33 @@ pub struct RepoQuery {
 }
 
 impl RepoQuery {
-    pub fn is_empty(&self) -> bool {
-        self.family.is_empty() && self.distro.is_empty() && self.manager.is_empty()
+    /// Get non-empty filters as (key, value) pairs.
+    pub fn filters(&self) -> Vec<(&'static str, &str)> {
+        [
+            ("family", self.family.trim()),
+            ("distro", self.distro.trim()),
+            ("manager", self.manager.trim()),
+        ]
+        .into_iter()
+        .filter(|(_, v)| !v.is_empty())
+        .collect()
+    }
+
+    /// Get currently applied filters.
+    pub fn current_filters(&self) -> Vec<AppliedFilter> {
+        applied_filters(&self.filters(), "")
+    }
+
+    /// Query string prefixes by filter keys that filter links on a page can append to.
+    pub fn add_queries(&self) -> std::collections::HashMap<&'static str, String> {
+        REPO_FILTERS
+            .iter()
+            .map(|k| (*k, to_query(&self.filters(), k)))
+            .collect()
     }
 
     pub fn to_query(&self) -> String {
-        [
-            ("family", &self.family),
-            ("distro", &self.distro),
-            ("manager", &self.manager),
-        ]
-        .iter()
-        .filter(|(_, v)| !v.is_empty())
-        .map(|(k, v)| format!("{}={}&", k, url_template::urlencode(v)))
-        .collect()
+        to_query(&self.filters(), "")
     }
 }
 
@@ -353,9 +380,64 @@ impl PackageQuery {
         .collect()
     }
 
+    /// Get every non-empty filter as (key, value) pairs for display.
+    pub fn filters(&self) -> Vec<(&'static str, &str)> {
+        [
+            ("license", self.license.trim()),
+            ("tag", self.tag.trim()),
+            ("maintainer", self.maintainer.trim()),
+            ("group", self.group.trim()),
+            ("platform", self.platform.trim()),
+            ("status", self.status.trim()),
+            (
+                "is_nonfree",
+                match self.is_nonfree.as_str() {
+                    "1" => "true",
+                    "0" => "false",
+                    _ => "",
+                },
+            ),
+        ]
+        .into_iter()
+        .filter(|(_, v)| !v.is_empty())
+        .collect()
+    }
+
     /// Whether the listing has any filters.
     pub fn has_filters(&self) -> bool {
-        !self.platform.trim().is_empty() || !self.facets().is_empty()
+        !self.filters().is_empty()
+    }
+
+    /// Get applied filters, each with the query string that drops it.
+    pub fn applied_filters(&self) -> Vec<AppliedFilter> {
+        applied_filters(&self.filters(), &self.to_query())
+    }
+
+    /// Add queries for each filter, keyed by the filter name.
+    pub fn add_queries(&self) -> std::collections::HashMap<&'static str, String> {
+        PACKAGE_FILTERS
+            .iter()
+            .map(|k| (*k, self.to_query_excluding(k)))
+            .collect()
+    }
+
+    /// Get the search term as a query string eg: `q=vim&`.
+    pub fn to_query(&self) -> String {
+        let (term, name_only) = self.search();
+        if term.is_empty() {
+            return String::new();
+        }
+
+        format!(
+            "{}={}&",
+            if name_only { "name" } else { "q" },
+            url_template::urlencode(term)
+        )
+    }
+
+    /// Query string with the search term and all the filters except `excl`.
+    pub fn to_query_excluding(&self, excl: &str) -> String {
+        self.to_query() + &to_query(&self.filters(), excl)
     }
 
     pub fn search(&self) -> (&str, bool) {
@@ -365,6 +447,36 @@ impl PackageQuery {
             (self.name.trim(), true)
         }
     }
+}
+
+/// A filter applied to a listing with a copy of the query string without it (used to 'clear' a particular filter).
+#[derive(Debug, Clone, Serialize)]
+pub struct AppliedFilter {
+    pub key: &'static str,
+    pub value: String,
+    pub query: String,
+}
+
+/// Convert filter [key, value] filters into badges with a query string
+/// without itself to get the 'clear' link.
+fn applied_filters(filters: &[(&'static str, &str)], prefix: &str) -> Vec<AppliedFilter> {
+    filters
+        .iter()
+        .map(|(key, value)| AppliedFilter {
+            key,
+            value: (*value).to_string(),
+            query: prefix.to_string() + &to_query(filters, key),
+        })
+        .collect()
+}
+
+/// Convert [key, value] filters to a query string, excluding the specified key.
+fn to_query(filters: &[(&'static str, &str)], excl: &str) -> String {
+    filters
+        .iter()
+        .filter(|(k, _)| *k != excl)
+        .map(|(k, v)| format!("{}={}&", k, url_template::urlencode(v)))
+        .collect()
 }
 
 /// Package search results.
