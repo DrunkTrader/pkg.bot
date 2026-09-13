@@ -538,7 +538,8 @@ fn transform_package(
         identity_tokens: fts_tokenize(&[&name, &name_norm, &p.trackname, &p.effname]),
         keyword_tokens: fts_tokenize(&[&keywords.join(" "), &groups.join(" ")]),
         body_tokens: fts_tokenize(&[p.comment.as_deref().unwrap_or_default()]),
-        slug: p.trackname,
+        // trackname can contain `/`, eg: freebsd's www/nginx, which breaks URLs.
+        slug: p.trackname.replace('/', "-"),
         name,
         name_norm,
         excerpt: p.comment,
