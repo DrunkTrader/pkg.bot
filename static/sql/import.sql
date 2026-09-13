@@ -12,13 +12,22 @@ PRAGMA analysis_limit     = 1000;     -- bound the closing PRAGMA optimize
 
 
 -- name: pg-get-repos
--- $1: repology.repositories.metadata->>'family' values to filter by.
+-- $1: repology.repositories.metadata->>'family' values to filter by..
 SELECT id::BIGINT                       AS id,
        name                             AS slug,
        COALESCE("desc", name)           AS name,
        metadata->>'family'              AS family,
        metadata->'repolinks'->0->>'url' AS homepage_url,
-       last_updated::TEXT               AS revision
+       COALESCE(metadata->'repolinks', '[]'::JSONB)::TEXT AS repolinks,
+       (SELECT pl->>'url'
+          FROM JSONB_ARRAY_ELEMENTS(COALESCE(metadata->'packagelinks', '[]'::JSONB)) pl
+         WHERE (pl->>'type')::INT = 5
+         ORDER BY (pl->>'priority')::INT, pl->>'url' LIMIT 1) AS pkg_url_template,
+       -- Prefer the recipe file (9) over the directory listing (7).
+       (SELECT pl->>'url'
+          FROM JSONB_ARRAY_ELEMENTS(COALESCE(metadata->'packagelinks', '[]'::JSONB)) pl
+         WHERE (pl->>'type')::INT IN (7, 9)
+         ORDER BY (pl->>'type')::INT DESC, (pl->>'priority')::INT, pl->>'url' LIMIT 1) AS source_url_template
 FROM repology.repositories
 WHERE state = 'active' AND metadata->>'family' = ANY($1) ORDER BY id;
 
@@ -43,6 +52,8 @@ WITH ranked AS (
            COALESCE(versionclass, 0)::INT AS versionclass,
            COALESCE(flags, 0)::INT AS flags,
            shadow,
+           -- These are used by package url templates, eg: https://site.com/{subrepo}/{arch}/{name} etc.
+           subrepo, arch,
            -- archs and subrepos only differ by build, so collect them across the group.
            ARRAY_AGG(arch) FILTER (WHERE arch IS NOT NULL) OVER w AS platforms,
            ARRAY_AGG(subrepo) FILTER (WHERE subrepo IS NOT NULL) OVER w AS subrepos,
@@ -58,27 +69,17 @@ WITH ranked AS (
 SELECT p.id, p.repo, p.family, p.srcname, p.binnames, p.trackname, p.visiblename,
        p.rawversion, p.version, p.maintainers, p.category, p.comment, p.licenses,
        p.effname, p.versionclass, p.flags, p.shadow, p.platforms, p.subrepos,
-       l.url0 AS homepage_url,
-       l.url2 AS repo_url,
-       COALESCE(l.url9, l.url7) AS source_url,
-       COALESCE(l.url5, l.url7, l.url9) AS package_url
+       p.subrepo, p.arch,
+       -- Links are [kind, link_id] pairs. Only need to get project homepage (kind=0)
+       -- as the rest of the urls (package permalink, repo) are in repos.metadata->'packagelinks.
+       (SELECT k.url
+          FROM JSON_ARRAY_ELEMENTS(
+                   CASE WHEN JSON_TYPEOF(p.links) = 'array' THEN p.links ELSE '[]'::JSON END
+               ) WITH ORDINALITY AS e(link, ord)
+          INNER JOIN repology.links k ON k.id = (e.link->>1)::INT
+         WHERE (e.link->>0)::INT = 0
+         ORDER BY e.ord LIMIT 1) AS homepage_url
 FROM ranked p
--- Links are [type, link_id] pairs. Only resolve the types that map to a column.
-LEFT JOIN LATERAL (
-    SELECT (ARRAY_AGG(url ORDER BY ord) FILTER (WHERE kind = 0))[1] AS url0,
-           (ARRAY_AGG(url ORDER BY ord) FILTER (WHERE kind = 2))[1] AS url2,
-           (ARRAY_AGG(url ORDER BY ord) FILTER (WHERE kind = 5))[1] AS url5,
-           (ARRAY_AGG(url ORDER BY ord) FILTER (WHERE kind = 7))[1] AS url7,
-           (ARRAY_AGG(url ORDER BY ord) FILTER (WHERE kind = 9))[1] AS url9
-    FROM (
-        SELECT (e.link->>0)::INT AS kind, e.ord, k.url
-        FROM JSON_ARRAY_ELEMENTS(
-            CASE WHEN JSON_TYPEOF(p.links) = 'array' THEN p.links ELSE '[]'::JSON END
-        ) WITH ORDINALITY AS e(link, ord)
-        INNER JOIN repology.links k ON k.id = (e.link->>1)::INT
-        WHERE (e.link->>0)::INT IN (0, 2, 5, 7, 9)
-    ) x
-) l ON TRUE
 WHERE p.rank = 1;
 
 

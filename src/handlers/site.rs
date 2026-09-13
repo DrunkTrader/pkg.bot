@@ -9,7 +9,7 @@ use axum::{
 use axum_extra::extract::Query;
 
 use super::{list_packages, paginate, Ctx, ReqStarted};
-use crate::models::{PackageQuery, PackageResults};
+use crate::models::{url_template, PackageQuery, PackageResults};
 
 /// Landing page.
 pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
@@ -151,9 +151,27 @@ pub async fn get_package(
     tpl_ctx.insert("page_type", "package");
     tpl_ctx.insert("repo", repo);
 
-    // The package's page on the repo's own website.
-    if let Some(tpl) = &repo.pkg_url_template {
-        tpl_ctx.insert("pkg_url", &tpl.replace("{slug}", &pkg.slug));
+    // The package's pages on the repo's own website.
+    let meta: serde_json::Value = serde_json::from_str(&pkg.meta.0).unwrap_or_default();
+    let fields = url_template::Fields {
+        slug: &pkg.slug,
+        name: &pkg.name,
+        pkg_base: pkg.pkg_base.as_deref(),
+        version: pkg.version.as_deref(),
+        subrepo: meta["subrepo"].as_str(),
+        arch: meta["arch"].as_str(),
+    };
+
+    for (key, tpl) in [
+        ("pkg_url", &repo.pkg_url_template),
+        ("source_url", &repo.source_url_template),
+    ] {
+        if let Some(url) = tpl
+            .as_deref()
+            .and_then(|t| url_template::expand(t, &fields))
+        {
+            tpl_ctx.insert(key, &url);
+        }
     }
 
     tpl_ctx.insert("pkg", &pkg);

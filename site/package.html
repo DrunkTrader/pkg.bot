@@ -97,8 +97,7 @@
     <nav class="card vstack links" aria-label="Package links">
       {% if pkg_url is defined %}<a href="{{ pkg_url }}" rel="noreferrer noopener">View in {{ repo.name }}</a>{% endif %}
       {% if pkg.homepage_url %}<a href="{{ pkg.homepage_url }}" rel="noreferrer noopener">Homepage</a>{% endif %}
-      {% if pkg.repo_url %}<a href="{{ pkg.repo_url }}" rel="noreferrer noopener">Source repository</a>{% endif %}
-      {% if pkg.source_url %}<a href="{{ pkg.source_url }}" rel="noreferrer noopener">Source archive</a>{% endif %}
+      {% if source_url is defined %}<a href="{{ source_url }}" rel="noreferrer noopener">Package recipe</a>{% endif %}
     </nav>
 
     <article class="card mt-4">

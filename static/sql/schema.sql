@@ -16,14 +16,16 @@ CREATE TABLE IF NOT EXISTS repos (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     slug              TEXT    NOT NULL,           -- 'nixpkgs-unstable', 'arch-extra', 'aur'
     name              TEXT    NOT NULL,           -- 'Nixpkgs (unstable)'
-    manager           TEXT    NOT NULL,           -- 'nix' | 'pacman' | 'aur' | 'apt' | 'apk' | ...
+    family            TEXT    NOT NULL,           -- 'debuntu | fedora ...'
     distro            TEXT,                       -- 'nixos', 'arch', 'debian' (NULL for distro-agnostic)
+    manager           TEXT    NOT NULL,           -- 'nix' | 'pacman' | 'aur' | 'apt' | 'apk' | ...
     branch            TEXT,                       -- 'unstable', '25.05', 'extra', 'trixie/main'
-
     homepage_url      TEXT,                       -- repo homepage
-    source_url        TEXT,                       -- repo data dump url
-    revision          TEXT,                       -- revision/last change indicator for the repo (file hash, timestamp etc)
-    pkg_url_template  TEXT,
+
+    pkg_url_template    TEXT,                     -- package landing page template, eg: https://site.com/{name}
+    source_url_template TEXT,                     -- package recipe/sources template (PKGBUILD, .spec, ebuild ...), eg: https://site.com/{pkg_base}/src
+
+    meta              TEXT    NOT NULL DEFAULT '{}' CHECK (json_valid(meta)), -- repolinks[] etc.
 
     score             REAL    NOT NULL DEFAULT 0, -- for ranking in cross-repo search
     package_count     INTEGER NOT NULL DEFAULT 0,
@@ -53,8 +55,6 @@ CREATE TABLE IF NOT EXISTS packages (
     version_norm      TEXT,                       -- 0 padded semver form for lexicographic search, eg: 2.1.1 = 00002.00001.00001
 
     homepage_url      TEXT,                       -- upstream project URL
-    repo_url          TEXT,
-    source_url        TEXT,
 
     licenses          TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(licenses)),  -- eg: ["GPL-3.0-or-later"]
     is_foss           INTEGER CHECK (is_foss IN (0, 1)),

@@ -9,7 +9,7 @@ use sqlx::{
 };
 use tokio::sync::mpsc;
 
-use crate::models::{Maintainer, IMPORT, SCHEMA};
+use crate::models::{url_template, Maintainer, IMPORT, SCHEMA};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -24,7 +24,9 @@ struct SrcRepo {
     name: String,
     family: String,
     homepage_url: Option<String>,
-    revision: Option<String>,
+    repolinks: Option<String>,
+    pkg_url_template: Option<String>,
+    source_url_template: Option<String>,
 }
 
 /// Repology package.
@@ -49,10 +51,9 @@ struct SrcPackage {
     shadow: bool,
     platforms: Option<Vec<String>>,
     subrepos: Option<Vec<String>>,
+    subrepo: Option<String>,
+    arch: Option<String>,
     homepage_url: Option<String>,
-    repo_url: Option<String>,
-    source_url: Option<String>,
-    package_url: Option<String>,
 }
 
 /// SQLite package.
@@ -67,8 +68,6 @@ struct Package {
     version: String,
     version_norm: Option<String>,
     homepage_url: Option<String>,
-    repo_url: Option<String>,
-    source_url: Option<String>,
     licenses: String,
     platforms: String,
     groups: String,
@@ -215,22 +214,55 @@ async fn import_repos(
     }
 
     let mut tx = db.begin().await?;
+    let mut untemplated = Vec::new();
     for r in &src {
+        // Figure out the package and source URL templates for the repo.
+        let pkg_url = match r.family.as_str() {
+            "nix" => make_nix_pkg_url_template(&r.slug),
+            _ => r
+                .pkg_url_template
+                .as_deref()
+                .and_then(url_template::parse_repology),
+        };
+        let source_url = r
+            .source_url_template
+            .as_deref()
+            .and_then(url_template::parse_repology);
+        if pkg_url.is_none() {
+            untemplated.push(r.slug.as_str());
+        }
+
+        let repolinks: serde_json::Value =
+            serde_json::from_str(r.repolinks.as_deref().unwrap_or("[]"))
+                .unwrap_or_else(|_| json!([]));
+
         sqlx::query(
-            "INSERT INTO repos (id, slug, name, manager, distro, homepage_url, revision) \
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO repos (id, slug, name, family, manager, distro, homepage_url, \
+             pkg_url_template, source_url_template, meta) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(r.id)
         .bind(&r.slug)
         .bind(&r.name)
+        .bind(&r.family)
         .bind(get_manager_name(&r.family, &r.slug))
         .bind(get_distro(&r.family, &r.slug))
         .bind(&r.homepage_url)
-        .bind(&r.revision)
+        .bind(&pkg_url)
+        .bind(&source_url)
+        .bind(json!({ "repolinks": repolinks }).to_string())
         .execute(&mut *tx)
         .await?;
     }
     tx.commit().await?;
+
+    if !untemplated.is_empty() {
+        log::warn!(
+            "{} repos have no package page URL: {}",
+            untemplated.len(),
+            untemplated.join(", ")
+        );
+    }
 
     log::info!("imported {} repos", src.len());
     Ok(src.into_iter().map(|r| (r.slug, r.id)).collect())
@@ -369,7 +401,7 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
     for chunk in rows.chunks(CHUNK) {
         let mut q = QueryBuilder::<Sqlite>::new(
             "INSERT INTO packages (id, repo_id, slug, name, name_norm, excerpt, pkg_base, \
-             version, version_norm, homepage_url, repo_url, source_url, licenses, platforms, \
+             version, version_norm, homepage_url, licenses, platforms, \
              \"groups\", keywords, status, meta, identity_tokens, keyword_tokens, body_tokens) ",
         );
         q.push_values(chunk, |mut b, p| {
@@ -383,8 +415,6 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
                 .push_bind(p.version.as_str())
                 .push_bind(p.version_norm.as_deref())
                 .push_bind(p.homepage_url.as_deref())
-                .push_bind(p.repo_url.as_deref())
-                .push_bind(p.source_url.as_deref())
                 .push_bind(p.licenses.as_str())
                 .push_bind(p.platforms.as_str())
                 .push_bind(p.groups.as_str())
@@ -456,7 +486,9 @@ fn transform_package(
         "flags": p.flags,
         "shadow": p.shadow,
         "subrepos": subrepos,
-        "package_url": p.package_url,
+        // Some repos use this in their package URL templates.
+        "subrepo": p.subrepo,
+        "arch": p.arch,
     })
     .to_string();
 
@@ -476,8 +508,6 @@ fn transform_package(
         version: p.rawversion,
         version_norm: normalize_version(&p.version),
         homepage_url: p.homepage_url,
-        repo_url: p.repo_url,
-        source_url: p.source_url,
         licenses: json!(licenses).to_string(),
         platforms: json!(platforms).to_string(),
         groups: json!(groups).to_string(),
@@ -492,6 +522,19 @@ fn transform_package(
     };
 
     (row, unknown)
+}
+
+/// Make the package page URL for nixpkgs as repology doesn't have it.
+fn make_nix_pkg_url_template(slug: &str) -> Option<String> {
+    let channel = match slug {
+        "nix_unstable" => "unstable".to_string(),
+        // nix_stable_26_05 -> 26.05
+        _ => slug.strip_prefix("nix_stable_")?.replace('_', "."),
+    };
+
+    Some(format!(
+        "https://search.nixos.org/packages?channel={channel}&query={{slug|quote}}#show={{slug|quote}}"
+    ))
 }
 
 /// Package manager for a Repology `family`.

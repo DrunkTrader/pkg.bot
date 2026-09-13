@@ -126,14 +126,15 @@ pub struct Repo {
     pub id: i64,
     pub slug: String,
     pub name: String,
+    pub family: String,
     pub manager: String,
     pub distro: Option<String>,
     pub branch: Option<String>,
 
     pub homepage_url: Option<String>,
-    pub source_url: Option<String>,
-    pub revision: Option<String>,
     pub pkg_url_template: Option<String>,
+    pub source_url_template: Option<String>,
+    pub meta: JsonString,
 
     pub score: f64,
     pub package_count: i64,
@@ -163,8 +164,6 @@ pub struct Package {
     pub version_norm: Option<String>,
 
     pub homepage_url: Option<String>,
-    pub repo_url: Option<String>,
-    pub source_url: Option<String>,
 
     pub licenses: StringArray,
     pub is_foss: Option<bool>,
