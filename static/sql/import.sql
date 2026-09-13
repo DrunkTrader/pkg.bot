@@ -18,6 +18,10 @@ SELECT id::BIGINT                       AS id,
        COALESCE("desc", name)           AS name,
        metadata->>'family'              AS family,
        metadata->'repolinks'->0->>'url' AS homepage_url,
+       num_packages,
+       num_maintainers,
+       CASE WHEN metadata->>'color' IS NULL THEN NULL
+            ELSE '#' || (metadata->>'color') END AS brand_color,
        COALESCE(metadata->'repolinks', '[]'::JSONB)::TEXT AS repolinks,
        (SELECT pl->>'url'
           FROM JSONB_ARRAY_ELEMENTS(COALESCE(metadata->'packagelinks', '[]'::JSONB)) pl

@@ -13,7 +13,7 @@
       <ol class="unstyled hstack gap-2 breadcrumb">
         <li><a href="{{ consts.root_url | safe }}/" class="unstyled">Home</a></li>
         <li aria-hidden="true">/</li>
-        <li><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}" class="unstyled">{{ repo.name }}</a></li>
+        <li><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}" class="unstyled">{% if repo.brand_color %}<span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span> {% endif %}{{ repo.name }}</a></li>
         <li aria-hidden="true">/</li>
         <li aria-current="page">{{ pkg.name }}</li>
       </ol>

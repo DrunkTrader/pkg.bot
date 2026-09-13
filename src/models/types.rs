@@ -135,9 +135,12 @@ pub struct Repo {
     pub pkg_url_template: Option<String>,
     pub source_url_template: Option<String>,
     pub meta: JsonString,
+    pub brand_color: Option<String>,
 
     pub score: f64,
     pub package_count: i64,
+    pub num_packages: i32,
+    pub num_maintainers: i32,
 
     pub created_at: String,
     pub updated_at: String,

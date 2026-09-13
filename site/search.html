@@ -12,7 +12,8 @@
 <section class="results">
   <p id="results-summary" class="summary text-light">
     {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
-    {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in {{ repo.name }}
+    {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
+    {%- if repo.brand_color %} <span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span>{% endif %} {{ repo.name }}
   </p>
 
   {% if results.packages | length == 0 %}

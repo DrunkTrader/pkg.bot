@@ -27,8 +27,12 @@ CREATE TABLE IF NOT EXISTS repos (
 
     meta              TEXT    NOT NULL DEFAULT '{}' CHECK (json_valid(meta)), -- repolinks[] etc.
 
+    brand_color       TEXT,
+
     score             REAL    NOT NULL DEFAULT 0, -- for ranking in cross-repo search
     package_count     INTEGER NOT NULL DEFAULT 0,
+    num_packages      INTEGER NOT NULL DEFAULT 0,
+    num_maintainers   INTEGER NOT NULL DEFAULT 0,
 
     created_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
