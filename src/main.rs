@@ -20,7 +20,7 @@ use clap::Parser;
 use cli::Commands;
 use handlers::{Consts, Ctx, Site};
 use manager::Manager;
-use models::{RepoQuery, Sort};
+use models::{RepoQuery, Sort, Suggestions};
 
 #[tokio::main]
 async fn main() {
@@ -101,6 +101,15 @@ async fn main() {
     };
     log::info!("loaded {} repos", repos.len());
 
+    // Autocomplete fields.
+    let licenses = Suggestions::new(load(mgr.get_licenses().await, "licenses"));
+    let platforms = Suggestions::new(load(mgr.get_platforms().await, "platforms"));
+    log::info!(
+        "loaded {} licenses, {} platforms",
+        licenses.len(),
+        platforms.len()
+    );
+
     // Initialize the HTML site templates.
     let site = cli.site.map(|path| {
         let tpl = init::site_tpls(&path).unwrap_or_else(|e| {
@@ -115,6 +124,8 @@ async fn main() {
     let ctx = Arc::new(Ctx {
         mgr,
         repos,
+        licenses,
+        platforms,
         site,
 
         // Global constants populated from config.
@@ -153,4 +164,11 @@ async fn main() {
         log::error!("server error: {}", e);
         std::process::exit(1);
     }
+}
+
+fn load<T, E: std::fmt::Display>(res: Result<T, E>, what: &str) -> T {
+    res.unwrap_or_else(|e| {
+        log::error!("error loading {}: {}", what, e);
+        std::process::exit(1);
+    })
 }

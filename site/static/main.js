@@ -1,5 +1,7 @@
+import { autocomp } from "./autocomp.js";
+
 (() => {
-  document.querySelectorAll("form.search-form").forEach((elForm) => {
+  document.querySelectorAll("[data-search-form]").forEach((elForm) => {
     const elQ = elForm.querySelector("[data-search-query]");
     const elRepo = elForm.querySelector("[data-search-repo]");
     const elScope = elForm.querySelector("[data-search-scope]");
@@ -32,13 +34,29 @@
 
     // On / press, focus the search input.
     document.addEventListener("keydown", (e) => {
-      if (elForm !== document.querySelector("form.search-form") || e.key !== "/" || e.target.matches("input, select, textarea")) {
+      if (elForm !== document.querySelector("[data-search-form]") || e.key !== "/" || e.target.matches("input, select, textarea")) {
         return;
       }
 
       e.preventDefault();
       elQ.focus();
       elQ.select();
+    });
+  });
+
+  // Attach autocomplete via /api/suggest/{field}.
+  document.querySelectorAll("[data-autocomp]").forEach((el) => {
+    autocomp(el, {
+      onQuery: async (val) => {
+        try {
+          const resp = await fetch(`/api/suggest/${el.dataset.autocomp}?q=${encodeURIComponent(val)}`);
+          const { data } = await resp.json();
+          return data || [];
+        } catch {
+          return [];
+        }
+      },
+      onSelect: (val) => val,
     });
   });
 })();

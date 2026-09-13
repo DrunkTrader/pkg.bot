@@ -222,6 +222,68 @@ impl RepoQuery {
     }
 }
 
+/// List of autocomplete values for the aPI.
+#[derive(Debug, Default)]
+pub struct Suggestions {
+    values: Vec<(String, String)>,
+}
+
+impl Suggestions {
+    pub fn new(values: Vec<String>) -> Self {
+        Self {
+            values: values
+                .into_iter()
+                .map(|v| {
+                    let lower = v.to_lowercase();
+                    (v, lower)
+                })
+                .collect(),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    /// Match `q`, prefix matches first, then substring. Multiple words are matched as AND.
+    pub fn query(&self, q: &str, limit: usize) -> Vec<String> {
+        let q = q.to_lowercase();
+        let words: Vec<&str> = q.split_whitespace().collect();
+        if words.is_empty() {
+            return self
+                .values
+                .iter()
+                .take(limit)
+                .map(|(v, _)| v.clone())
+                .collect();
+        }
+
+        let mut prefix: Vec<&str> = Vec::new();
+        let mut substr: Vec<&str> = Vec::new();
+        for (val, lower) in &self.values {
+            if !words.iter().all(|w| lower.contains(w)) {
+                continue;
+            }
+
+            if lower.starts_with(words[0]) {
+                prefix.push(val);
+                if prefix.len() >= limit {
+                    break;
+                }
+            } else if substr.len() < limit {
+                substr.push(val);
+            }
+        }
+
+        prefix
+            .into_iter()
+            .chain(substr)
+            .take(limit)
+            .map(|v| v.to_string())
+            .collect()
+    }
+}
+
 /// A package repository (a distro's repo, channel or branch).
 #[derive(Debug, Clone, Default, Serialize, FromRow)]
 pub struct Repo {

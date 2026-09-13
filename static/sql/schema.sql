@@ -136,6 +136,8 @@ CREATE TABLE IF NOT EXISTS package_facets (
 CREATE INDEX IF NOT EXISTS idx_facets_pkg ON package_facets (package_id, kind, value);
 
 -- Package count per facet value.
+-- Also holds kind = 'platform', which has no package_facets rows: a row per
+-- (package, platform) would run into millions, and platform is filtered against
 CREATE TABLE IF NOT EXISTS facet_counts (
     repo_id           INTEGER NOT NULL,
     kind              TEXT    NOT NULL,

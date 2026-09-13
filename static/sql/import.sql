@@ -141,6 +141,12 @@ INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
 INSERT INTO facet_counts (repo_id, kind, value, package_count)
     SELECT repo_id, kind, value, COUNT(*) FROM package_facets GROUP BY 1, 2, 3;
 
+-- Platforms have no package_facets rows. Insert them manually.
+INSERT INTO facet_counts (repo_id, kind, value, package_count)
+    SELECT p.repo_id, 'platform', pf.value, COUNT(*)
+    FROM packages p, JSON_EACH(p.platforms) pf
+    GROUP BY 1, 2, 3;
+
 
 -- name: build-fts
 INSERT INTO packages_fts (rowid, identity, keywords, body, repo)

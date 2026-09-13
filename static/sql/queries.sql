@@ -117,6 +117,14 @@ SELECT COUNT(*) FROM (
     {FILTERS} LIMIT $6
 );
 
+-- name: get-licenses
+SELECT value FROM facet_counts WHERE kind = 'license'
+GROUP BY value ORDER BY SUM(package_count) DESC, value COLLATE NOCASE;
+
+-- name: get-platforms
+SELECT value FROM facet_counts WHERE kind = 'platform'
+GROUP BY value ORDER BY SUM(package_count) DESC, value COLLATE NOCASE;
+
 -- name: search-packages
 -- $1: repo_id (0 for all); $2: scoped FTS expression
 -- $3: lowercased query; $4: normalized query for exact name comparison
@@ -188,3 +196,9 @@ INSERT OR IGNORE INTO package_facets (repo_id, kind, value, name, package_id)
 
 INSERT INTO facet_counts (repo_id, kind, value, package_count)
     SELECT repo_id, kind, value, COUNT(*) FROM package_facets WHERE repo_id = $1 GROUP BY 1, 2, 3;
+
+-- Platforms have no package_facets rows. Insert them manually.
+INSERT INTO facet_counts (repo_id, kind, value, package_count)
+    SELECT p.repo_id, 'platform', pf.value, COUNT(*)
+    FROM packages p, JSON_EACH(p.platforms) pf
+    WHERE p.repo_id = $1 GROUP BY 1, 2, 3;

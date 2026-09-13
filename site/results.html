@@ -5,7 +5,7 @@
 
 {% block content %}
 <section class="results">
-  <div class="hstack justify-between mb-4">
+  <div class="hstack mb-4">
     <p id="results-summary" class="summary text-light">
       {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
       {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
@@ -18,7 +18,7 @@
   {% if results.packages | length == 0 %}
     <article class="card align-center">
       <h3>No packages found</h3>
-      <p class="text-light">Try a different keyword, or search another repository.</p>
+      <p class="text-light">Try a different keyword or search another repository.</p>
     </article>
   {% else %}
     <div class="packages-wrap card" role="region" aria-labelledby="results-summary" tabindex="0">

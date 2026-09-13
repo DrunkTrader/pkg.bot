@@ -9,15 +9,18 @@ use axum::{
     Router,
 };
 
-use crate::handlers::{packages, site, Ctx, ReqStarted};
+use crate::handlers::{packages, site, suggest, Ctx, ReqStarted};
 
 /// Initialize HTTP routes.
 pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
     // JSON API.
-    let mut router = Router::new().route(
-        "/api/repos/{repo_id}/packages",
-        get(packages::query_packages),
-    );
+    let mut router = Router::new()
+        .route(
+            "/api/repos/{repo_id}/packages",
+            get(packages::query_packages),
+        )
+        .route("/api/suggest/licenses", get(suggest::suggest_licenses))
+        .route("/api/suggest/platforms", get(suggest::suggest_platforms));
 
     // HMTL pages.
     if ctx.site.is_some() {

@@ -159,6 +159,20 @@ impl Manager {
         }))
     }
 
+    /// Get unique license values.
+    pub async fn get_licenses(&self) -> Result<Vec<String>, Error> {
+        Ok(sqlx::query_scalar(&Q.get_licenses.query)
+            .fetch_all(&self.db)
+            .await?)
+    }
+
+    /// Get every platforms.
+    pub async fn get_platforms(&self) -> Result<Vec<String>, Error> {
+        Ok(sqlx::query_scalar(&Q.get_platforms.query)
+            .fetch_all(&self.db)
+            .await?)
+    }
+
     pub async fn search_packages(&self, pq: &PackageQuery) -> Result<(Vec<Package>, bool), Error> {
         let (term, name_only) = pq.search();
         let fts = to_fts_query(term, pq.repo_id, name_only);

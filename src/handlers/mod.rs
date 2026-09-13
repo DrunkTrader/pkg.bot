@@ -1,5 +1,6 @@
 pub mod packages;
 pub mod site;
+pub mod suggest;
 
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
@@ -13,7 +14,7 @@ use tera::Tera;
 
 use crate::{
     manager::Manager,
-    models::{Cursor, PackageQuery, PackageResults, Repo},
+    models::{Cursor, PackageQuery, PackageResults, Repo, Suggestions},
 };
 
 /// Request start time inserted by the `track_time` middleware.
@@ -27,6 +28,10 @@ pub struct Ctx {
     /// All repos in the database, loaded once on boot. New repos added by an
     /// indexer only show up on the next restart.
     pub repos: Vec<Repo>,
+
+    /// Autosuggestion fields.
+    pub licenses: Suggestions,
+    pub platforms: Suggestions,
 
     /// HTML SSR site templates. `None` if the `--site` isn't set.
     pub site: Option<Site>,

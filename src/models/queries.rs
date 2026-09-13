@@ -75,6 +75,12 @@ pub struct Queries {
 
     #[name = "search-packages"]
     pub search_packages: yesqlr::Query,
+
+    #[name = "get-licenses"]
+    pub get_licenses: yesqlr::Query,
+
+    #[name = "get-platforms"]
+    pub get_platforms: yesqlr::Query,
 }
 
 /// A listing source, pre-composed for paging either way plus its capped count.
