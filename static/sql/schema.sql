@@ -34,9 +34,11 @@ CREATE TABLE IF NOT EXISTS repos (
     num_packages      INTEGER NOT NULL DEFAULT 0,
     num_maintainers   INTEGER NOT NULL DEFAULT 0,
 
+    -- These timestamps reflect the upstream repo, not the local state.
+    -- created_at is repology's repositories.first_seen.
     created_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    -- updated_at is the last time the repo received an update to any of its packages.
     updated_at        TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    synced_at         TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
 
     UNIQUE (slug)
 ) STRICT;

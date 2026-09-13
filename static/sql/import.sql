@@ -23,6 +23,7 @@ SELECT id::BIGINT                       AS id,
        CASE WHEN metadata->>'color' IS NULL THEN NULL
             ELSE '#' || (metadata->>'color') END AS brand_color,
        COALESCE(metadata->'repolinks', '[]'::JSONB)::TEXT AS repolinks,
+       TO_CHAR(first_seen AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at,
        (SELECT pl->>'url'
           FROM JSONB_ARRAY_ELEMENTS(COALESCE(metadata->'packagelinks', '[]'::JSONB)) pl
          WHERE (pl->>'type')::INT = 5
@@ -101,9 +102,13 @@ FETCH FORWARD 25000 FROM import_packages;
 
 
 -- name: update-counts
-UPDATE repos SET package_count = (
-    SELECT COUNT(*) FROM packages WHERE repo_id = repos.id
-);
+UPDATE repos SET
+    package_count = (SELECT COUNT(*) FROM packages WHERE repo_id = repos.id),
+    -- Get the latest upstream version change across the repo's packages and
+    -- use that as the repo's last_update.
+    updated_at = COALESCE(
+        (SELECT MAX(updated_at) FROM packages WHERE repo_id = repos.id), updated_at
+    );
 UPDATE maintainers SET package_count = (
     SELECT COUNT(*) FROM package_maintainers WHERE maintainer_id = maintainers.id
 );

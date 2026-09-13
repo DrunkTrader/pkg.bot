@@ -19,7 +19,7 @@
         <col class="col-manager" />
         <col class="col-packages" />
         <col class="col-maintainers" />
-        <col class="col-synced" />
+        <col class="col-updated" />
       </colgroup>
       <thead>
         <tr>
@@ -28,7 +28,7 @@
           {{ sort_th(url=sort_url, sort=sort, class="col-manager", field="manager", label="Pkg manager") | safe }}
           {{ sort_th(url=sort_url, sort=sort, class="col-packages", field="package_count", label="Packages") | safe }}
           {{ sort_th(url=sort_url, sort=sort, class="col-maintainers", field="num_maintainers", label="Maintainers") | safe }}
-          {{ sort_th(url=sort_url, sort=sort, class="col-synced", field="synced_at", label="Synced") | safe }}
+          {{ sort_th(url=sort_url, sort=sort, class="col-updated", field="updated_at", label="Last update") | safe }}
         </tr>
       </thead>
       <tbody>
@@ -54,8 +54,8 @@
             <a href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.package_count | num }}</a>
           </td>
           <td class="col-maintainers">{% if r.num_maintainers %}{{ r.num_maintainers | num }}{% else %}<span class="text-light" aria-label="Maintainer count unavailable">—</span>{% endif %}</td>
-          <td class="col-synced text-light">
-            <time datetime="{{ r.synced_at | truncate(length=10, end="") }}">{{ r.synced_at | truncate(length=10, end="") }}</time>
+          <td class="col-updated text-light">
+            <time datetime="{{ r.updated_at | truncate(length=10, end="") }}">{{ r.updated_at | truncate(length=10, end="") }}</time>
           </td>
         </tr>
         {%- else %}

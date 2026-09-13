@@ -131,7 +131,7 @@ pub const REPO_SORT_FIELDS: [&str; 6] = [
     "manager",
     "package_count",
     "num_maintainers",
-    "synced_at",
+    "updated_at",
 ];
 
 /// `?order_by=&order=` on a listing page.
@@ -191,7 +191,6 @@ pub struct Repo {
 
     pub created_at: String,
     pub updated_at: String,
-    pub synced_at: String,
 }
 
 /// A package in a repository.

@@ -45,6 +45,7 @@ struct SrcRepo {
     num_packages: i32,
     num_maintainers: i32,
     brand_color: Option<String>,
+    created_at: String,
 }
 
 /// Repology package.
@@ -262,8 +263,8 @@ async fn import_repos(
         sqlx::query(
             "INSERT INTO repos (id, slug, name, family, manager, distro, homepage_url, \
              pkg_url_template, source_url_template, meta, brand_color, num_packages, \
-             num_maintainers) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             num_maintainers, created_at) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(r.id)
         .bind(&r.slug)
@@ -278,6 +279,7 @@ async fn import_repos(
         .bind(&r.brand_color)
         .bind(r.num_packages)
         .bind(r.num_maintainers)
+        .bind(&r.created_at)
         .execute(&mut *tx)
         .await?;
     }

@@ -115,7 +115,7 @@ body.index {
   .col-manager { width: 12%; }
   .col-packages { width: 13%; }
   .col-maintainers { width: 13%; }
-  .col-synced { width: 12%; }
+  .col-updated { width: 12%; }
 
   .repo-details {
     font-weight: var(--font-normal);
@@ -159,7 +159,7 @@ body.index {
 
   .col-packages,
   .col-maintainers,
-  .col-synced {
+  .col-updated {
     text-align: right;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
