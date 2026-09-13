@@ -38,6 +38,16 @@ impl Manager {
             .await?)
     }
 
+    /// Get the default grouped repo list (sorted desc by package count).
+    pub async fn get_repos_grouped(&self, filter: &RepoQuery) -> Result<Vec<Repo>, Error> {
+        Ok(sqlx::query_as(&Q.get_repos_grouped.query)
+            .bind(filter.family.trim())
+            .bind(filter.distro.trim())
+            .bind(filter.manager.trim())
+            .fetch_all(&self.db)
+            .await?)
+    }
+
     pub async fn get_package(&self, repo_id: i64, slug: &str) -> Result<Package, Error> {
         sqlx::query_as(&Q.get_package.query)
             .bind(repo_id)

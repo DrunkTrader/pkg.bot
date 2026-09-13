@@ -6,6 +6,18 @@ WHERE ($1 = '' OR family = $1)
   AND ($3 = '' OR manager = $3)
 ORDER BY {ORDER_BY} COLLATE NOCASE {ORDER}, name COLLATE NOCASE;
 
+-- name: get-repos-grouped
+-- Get the default grouped repo list (sorted desc by package count).
+SELECT * FROM repos
+WHERE ($1 = '' OR family = $1)
+  AND ($2 = '' OR IFNULL(distro, '') = $2)
+  AND ($3 = '' OR manager = $3)
+ORDER BY SUM(package_count) OVER (PARTITION BY IFNULL(distro, family)) DESC,
+         IFNULL(distro, family) COLLATE NOCASE,
+         package_count DESC,
+         name COLLATE NOCASE;
+
+
 -- name: get-package
 -- $1: repo_id
 -- $2: package slug

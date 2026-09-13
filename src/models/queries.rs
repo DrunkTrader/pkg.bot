@@ -49,6 +49,9 @@ pub struct Queries {
     #[name = "get-repos"]
     pub get_repos: yesqlr::Query,
 
+    #[name = "get-repos-grouped"]
+    pub get_repos_grouped: yesqlr::Query,
+
     #[name = "get-package"]
     pub get_package: yesqlr::Query,
 

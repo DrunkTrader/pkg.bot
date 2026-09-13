@@ -29,10 +29,14 @@ pub async fn render_repos(
     Query(sort): Query<Sort>,
     Query(filter): Query<RepoQuery>,
 ) -> Response {
-    let sort = sort.clamp(&REPO_SORT_FIELDS, "name");
+    let sort = sort.clamp(&REPO_SORT_FIELDS, "");
 
     // Sort and filter.
-    let repos = match ctx.mgr.get_repos(&sort, &filter).await {
+    let repos = match if sort.order_by.is_empty() {
+        ctx.mgr.get_repos_grouped(&filter).await
+    } else {
+        ctx.mgr.get_repos(&sort, &filter).await
+    } {
         Ok(r) => r,
         Err(e) => {
             log::error!("error fetching repos: {}", e);
