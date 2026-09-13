@@ -123,7 +123,7 @@ fn apply(filter: Option<&str>, v: &str) -> Option<String> {
 }
 
 /// Urlencode the given string.
-fn urlencode(v: &str) -> String {
+pub fn urlencode(v: &str) -> String {
     let mut out = String::with_capacity(v.len());
     for b in v.bytes() {
         match b {

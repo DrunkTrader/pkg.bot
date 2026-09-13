@@ -22,6 +22,7 @@ body {
 
 .icon-search { --icon: url("/static/search.svg"); }
 .icon-avatar { --icon: url("/static/avatar.svg"); }
+.icon-globe { --icon: url("/static/globe.svg"); }
 
 /* Header */
 .header {
@@ -153,7 +154,6 @@ body.index {
   }
 
   .repo-family {
-    display: block;
     color: var(--muted-foreground);
   }
 

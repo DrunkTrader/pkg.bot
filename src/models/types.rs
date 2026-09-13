@@ -6,6 +6,8 @@ use sqlx::{
     Decode, Encode, FromRow, Sqlite, Type,
 };
 
+use super::url_template;
+
 /// Status of a package (eg: active, deleted etc.).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
 #[serde(rename_all = "lowercase")]
@@ -164,6 +166,32 @@ impl Sort {
         .to_string();
 
         self
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RepoQuery {
+    pub family: String,
+    pub distro: String,
+    pub manager: String,
+}
+
+impl RepoQuery {
+    pub fn is_empty(&self) -> bool {
+        self.family.is_empty() && self.distro.is_empty() && self.manager.is_empty()
+    }
+
+    pub fn to_query(&self) -> String {
+        [
+            ("family", &self.family),
+            ("distro", &self.distro),
+            ("manager", &self.manager),
+        ]
+        .iter()
+        .filter(|(_, v)| !v.is_empty())
+        .map(|(k, v)| format!("{}={}&", k, url_template::urlencode(v)))
+        .collect()
     }
 }
 

@@ -9,6 +9,13 @@
   <p id="repos-summary" class="summary text-light">
     <strong>{{ repo_list | length | num }}</strong> repositor{{ repo_list | length | pluralize(singular="y", plural="ies") }} with
     <strong>{{ total_packages | num }}</strong> package{{ total_packages | pluralize }} indexed.
+    {%- if has_filter %}
+    Filtered by
+    {%- if filter.family %} family <strong>{{ filter.family }}</strong>{% endif %}
+    {%- if filter.distro %} distro <strong>{{ filter.distro }}</strong>{% endif %}
+    {%- if filter.manager %} manager <strong>{{ filter.manager }}</strong>{% endif %}.
+    <a href="{{ consts.root_url | safe }}/repos">Clear</a>
+    {%- endif %}
   </p>
 
   <div class="packages-wrap card" role="region" aria-labelledby="repos-summary" tabindex="0">
@@ -42,14 +49,14 @@
             </div>
             <p class="repo-links">
               <code>{{ r.slug }}</code>
-              {%- if r.homepage_url %}<a href="{{ r.homepage_url }}" rel="noreferrer noopener">Homepage</a>{% endif %}
+              {%- if r.homepage_url %}<a href="{{ r.homepage_url }}" rel="noreferrer noopener" title="Homepage"><span class="icon icon-globe" aria-hidden="true"></span></a>{% endif %}
             </p>
           </th>
           <td class="col-distro">
-            {{ r.distro | default(value="—") }}
-            {%- if r.family != r.distro %}<span class="repo-family text-light">{{ r.family }}</span>{% endif %}
+            {%- if r.distro %}<a href="{{ consts.root_url | safe }}/repos?distro={{ r.distro | urlencode }}" title="Filter by distro">{{ r.distro }}</a>{% else %}&mdash;{% endif %}
+            {%- if r.family != r.distro %}<div><a class="repo-family text-light" href="{{ consts.root_url | safe }}/repos?family={{ r.family | urlencode }}" title="Filter by family">{{ r.family }}</a></div>{% endif %}
           </td>
-          <td class="col-manager">{{ r.manager }}</td>
+          <td class="col-manager"><a href="{{ consts.root_url | safe }}/repos?manager={{ r.manager | urlencode }}" title="Filter by package manager">{{ r.manager }}</a></td>
           <td class="col-packages">
             <a href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.package_count | num }}</a>
           </td>
