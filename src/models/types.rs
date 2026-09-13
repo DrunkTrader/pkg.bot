@@ -120,6 +120,53 @@ impl<'r> Decode<'r, Sqlite> for JsonString {
     }
 }
 
+/// Sort order.
+pub const ORDER_ASC: &str = "asc";
+pub const ORDER_DESC: &str = "desc";
+
+/// Columns the repo listings can be sorted by.
+pub const REPO_SORT_FIELDS: [&str; 6] = [
+    "name",
+    "distro",
+    "manager",
+    "package_count",
+    "num_maintainers",
+    "synced_at",
+];
+
+/// `?order_by=&order=` on a listing page.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Sort {
+    pub order_by: String,
+    pub order: String,
+}
+
+impl Sort {
+    /// Sort ascending by `field`.
+    pub fn asc(field: &str) -> Self {
+        Self {
+            order_by: field.to_string(),
+            order: ORDER_ASC.to_string(),
+        }
+    }
+
+    /// Validate sort fields.
+    pub fn clamp(mut self, fields: &[&str], default: &str) -> Self {
+        if !fields.contains(&self.order_by.as_str()) {
+            self.order_by = default.to_string();
+        }
+        self.order = if self.order.eq_ignore_ascii_case(ORDER_DESC) {
+            ORDER_DESC
+        } else {
+            ORDER_ASC
+        }
+        .to_string();
+
+        self
+    }
+}
+
 /// A package repository (a distro's repo, channel or branch).
 #[derive(Debug, Clone, Default, Serialize, FromRow)]
 pub struct Repo {

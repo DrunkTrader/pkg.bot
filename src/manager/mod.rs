@@ -1,7 +1,7 @@
 use sqlx::sqlite::SqlitePool;
 
 use crate::models::{
-    Cursor, Listing, Package, PackageQuery, Repo, BY_FACET, BY_NAME, Q, SEARCH_PACKAGES,
+    Cursor, Listing, Package, PackageQuery, Repo, Sort, BY_FACET, BY_NAME, Q, SEARCH_PACKAGES,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -21,10 +21,15 @@ impl Manager {
         Self { db }
     }
 
-    pub async fn get_repos(&self) -> Result<Vec<Repo>, Error> {
-        Ok(sqlx::query_as(&Q.get_repos.query)
-            .fetch_all(&self.db)
-            .await?)
+    pub async fn get_repos(&self, sort: &Sort) -> Result<Vec<Repo>, Error> {
+        // Optional sort.
+        let sql = Q
+            .get_repos
+            .query
+            .replace("{ORDER_BY}", &sort.order_by)
+            .replace("{ORDER}", &sort.order);
+
+        Ok(sqlx::query_as(&sql).fetch_all(&self.db).await?)
     }
 
     pub async fn get_package(&self, repo_id: i64, slug: &str) -> Result<Package, Error> {

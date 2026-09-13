@@ -225,6 +225,22 @@ body.index {
     white-space: nowrap;
   }
 
+  /* Sortable column headers. */
+  thead a[data-sort-field] {
+    color: inherit;
+
+    &[data-sorted]::after {
+      margin-left: var(--space-1);
+    }
+
+    &[data-sorted="asc"]::after { content: "↑"; }
+    &[data-sorted="desc"]::after { content: "↓"; }
+  }
+
+  thead th[aria-sort] a {
+    color: var(--foreground);
+  }
+
   tbody tr:last-child > * {
     border-bottom: 0;
   }

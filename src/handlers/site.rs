@@ -9,7 +9,7 @@ use axum::{
 use axum_extra::extract::Query;
 
 use super::{list_packages, paginate, Ctx, ReqStarted};
-use crate::models::{url_template, PackageQuery, PackageResults};
+use crate::models::{url_template, PackageQuery, PackageResults, Sort, REPO_SORT_FIELDS};
 
 /// Landing page.
 pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
@@ -24,12 +24,31 @@ pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
 }
 
 /// Repository directory.
-pub async fn render_repos(State(ctx): State<Arc<Ctx>>) -> Response {
+pub async fn render_repos(State(ctx): State<Arc<Ctx>>, Query(sort): Query<Sort>) -> Response {
+    let sort = sort.clamp(&REPO_SORT_FIELDS, "name");
+
+    // Sort.
+    let repos = match ctx.mgr.get_repos(&sort).await {
+        Ok(r) => r,
+        Err(e) => {
+            log::error!("error fetching repos: {}", e);
+            return render_message(
+                &ctx,
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Error",
+                "Error fetching the repositories.",
+            );
+        }
+    };
+
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "repositories");
+    tpl_ctx.insert("repo_list", &repos);
+    tpl_ctx.insert("sort", &sort);
+    tpl_ctx.insert("sort_url", &format!("{}/repos?", ctx.consts.root_url));
     tpl_ctx.insert(
         "total_packages",
-        &ctx.repos.iter().map(|r| r.package_count).sum::<i64>(),
+        &repos.iter().map(|r| r.package_count).sum::<i64>(),
     );
 
     render(&ctx, "repositories.html", &mut tpl_ctx)

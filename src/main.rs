@@ -20,6 +20,7 @@ use clap::Parser;
 use cli::Commands;
 use handlers::{Consts, Ctx, Site};
 use manager::Manager;
+use models::Sort;
 
 #[tokio::main]
 async fn main() {
@@ -91,7 +92,7 @@ async fn main() {
     let mgr = Arc::new(Manager::new(db));
 
     // Load the repos once. They only change when an indexer adds one.
-    let repos = match mgr.get_repos().await {
+    let repos = match mgr.get_repos(&Sort::asc("name")).await {
         Ok(r) => r,
         Err(e) => {
             log::error!("error loading repos: {}", e);

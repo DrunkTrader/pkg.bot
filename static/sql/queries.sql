@@ -1,5 +1,6 @@
 -- name: get-repos
-SELECT * FROM repos ORDER BY name COLLATE NOCASE;
+-- {ORDER_BY}, {ORDER} are substited as literals.
+SELECT * FROM repos ORDER BY {ORDER_BY} COLLATE NOCASE {ORDER}, name COLLATE NOCASE;
 
 -- name: get-package
 -- $1: repo_id
