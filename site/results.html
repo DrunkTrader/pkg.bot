@@ -6,7 +6,7 @@
 
 {% block content %}
 <section class="results">
-  <h1>&ldquo;{{ term }}&rdquo;</h1>
+  {% if term %}<h1>&ldquo;{{ term }}&rdquo;</h1>{% endif %}
 
   <div class="hstack justify-between mb-4">
     <div class="hstack">

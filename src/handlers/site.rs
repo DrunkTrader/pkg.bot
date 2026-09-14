@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, OnceLock},
+    time::Duration,
+};
 
 use axum::{
     extract::{Path, RawQuery, State},
@@ -13,6 +16,13 @@ use crate::feed::{Feed, Item};
 use crate::models::{
     url_template, Package, PackageQuery, PackageResults, Repo, RepoQuery, Sort, REPO_SORT_FIELDS,
 };
+
+/// Latest repos (latest version per distro) that's rendered in the search bar.
+static LATEST_REPOS: OnceLock<Vec<Repo>> = OnceLock::new();
+
+pub fn init_latest_repos(repos: &[Repo]) {
+    LATEST_REPOS.get_or_init(|| get_latest_repos(repos).into_iter().cloned().collect());
+}
 
 /// Landing page.
 pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
@@ -336,11 +346,64 @@ fn package_url(template: &str, pkg: &Package) -> Option<String> {
     url_template::expand(template, &fields)
 }
 
+/// Get the "latest" repos from each distro group, eg: Fedora 44, Fedora 43 .. pick the latest.
+/// This is used to populate the "latest repos" dropdown in the search bar.
+///
+/// Split slugs by underscores, group by the first term (eg: fedora_44, fedora_43 -> fedora),
+/// pick the highest numeric version within each group.
+fn get_latest_repos(repos: &[Repo]) -> Vec<&Repo> {
+    fn release(repo: &Repo) -> (String, Vec<u64>, u8) {
+        let parts: Vec<_> = repo.slug.split('_').collect();
+        let suffix = &parts[1..];
+        let version = suffix
+            .iter()
+            .skip_while(|p| p.trim_start_matches('v').parse::<u64>().is_err())
+            .map_while(|p| p.trim_start_matches('v').parse::<u64>().ok())
+            .collect();
+        let channel = if suffix.contains(&"stable") {
+            3
+        } else if suffix.contains(&"rolling") {
+            2
+        } else if suffix.contains(&"oldstable") {
+            0
+        } else {
+            1
+        };
+        (parts[0].to_owned(), version, channel)
+    }
+
+    let mut latest = std::collections::HashMap::new();
+    for repo in repos {
+        let (group, version, channel) = release(repo);
+        let rank = (
+            version,
+            channel,
+            &repo.created_at,
+            std::cmp::Reverse(&repo.slug),
+        );
+        let entry = latest.entry(group).or_insert((repo, rank.clone()));
+        if rank > entry.1 {
+            *entry = (repo, rank);
+        }
+    }
+    // Preserve the alphabetical ordering of the full list.
+    repos
+        .iter()
+        .filter(|repo| latest.values().any(|(r, _)| r.id == repo.id))
+        .collect()
+}
+
 /// Template context common to all pages.
 fn base_context(ctx: &Ctx) -> tera::Context {
     let mut tpl_ctx = tera::Context::new();
     tpl_ctx.insert("consts", &ctx.consts);
     tpl_ctx.insert("repos", &ctx.repos);
+    tpl_ctx.insert(
+        "latest_repos",
+        LATEST_REPOS
+            .get()
+            .expect("latest repos initialized at startup"),
+    );
     tpl_ctx.insert("asset_ver", &ctx.asset_ver);
 
     // The search form is on every page. Give it an empty query and the first
@@ -537,5 +600,92 @@ fn fmt_duration(d: Duration) -> String {
         format!("{}ms", ms)
     } else {
         format!("{}us", d.as_micros())
+    }
+}
+
+#[cfg(test)]
+mod search_repo_tests {
+    use super::*;
+
+    #[test]
+    fn compact_dropdown_renders_latest_and_view_all() {
+        let repos = vec![
+            Repo {
+                id: 1,
+                slug: "fedora_43".into(),
+                name: "Fedora 43".into(),
+                ..Repo::default()
+            },
+            Repo {
+                id: 2,
+                slug: "fedora_44".into(),
+                name: "Fedora 44".into(),
+                ..Repo::default()
+            },
+        ];
+        let mut context = tera::Context::new();
+        context.insert("latest_repos", &get_latest_repos(&repos));
+        context.insert("repo", &repos[0]);
+        context.insert("term", "");
+        context.insert("advanced_form", &false);
+        context.insert("consts", &serde_json::json!({"root_url": "/prefix"}));
+        let html = tera::Tera::one_off(
+            include_str!("../../site/partials/search-inputs.html"),
+            &context,
+            true,
+        )
+        .unwrap();
+        assert!(!html.contains("Fedora 43"));
+        assert!(html.contains("Fedora 44"));
+        assert!(html.contains("disabled selected>Select repository"));
+        assert!(html.contains("data-view-all-repos>View all repos</option>"));
+        assert!(html.contains("/prefix/search"));
+    }
+
+    #[test]
+    fn latest_versions_and_channels_keep_independent_repos() {
+        let slugs = [
+            "alpine_3_9",
+            "alpine_3_24",
+            "alpine_edge",
+            "arch",
+            "aur",
+            "epel_9",
+            "epel_10",
+            "fedora_44",
+            "fedora_rawhide",
+            "manjaro_testing",
+            "manjaro_stable",
+            "nix_stable_26_05",
+            "nix_unstable",
+            "ubuntu_26_10",
+            "ubuntu_26_10_proposed",
+        ];
+        let repos: Vec<_> = slugs
+            .iter()
+            .enumerate()
+            .map(|(id, slug)| Repo {
+                id: id as i64,
+                slug: (*slug).into(),
+                ..Repo::default()
+            })
+            .collect();
+        let selected: Vec<_> = get_latest_repos(&repos)
+            .iter()
+            .map(|r| r.slug.as_str())
+            .collect();
+        assert_eq!(
+            selected,
+            [
+                "alpine_3_24",
+                "arch",
+                "aur",
+                "epel_10",
+                "fedora_44",
+                "manjaro_stable",
+                "nix_stable_26_05",
+                "ubuntu_26_10",
+            ]
+        );
     }
 }

@@ -1,10 +1,22 @@
 import { autocomp } from "./autocomp.js";
 
 (() => {
+  const savedRepo = (() => {
+    const value = localStorage.getItem("repo");
+    if (!value) return null;
+    try {
+      const repo = JSON.parse(value);
+      return repo && typeof repo.slug === "string" && typeof repo.name === "string" ? repo : null;
+    } catch {
+      return { slug: value, name: null };
+    }
+  })();
+
   document.querySelectorAll("[data-search-form]").forEach((elForm) => {
     const elQ = elForm.querySelector("[data-search-query]");
     const elRepo = elForm.querySelector("[data-search-repo]");
     const elScope = elForm.querySelector("[data-search-scope]");
+    const isAdvanced = elForm.classList.contains("advanced-search");
 
     if (elScope) {
       elScope.addEventListener("change", (e) => (elQ.name = e.target.value));
@@ -14,19 +26,38 @@ import { autocomp } from "./autocomp.js";
     const root = elForm.action.replace(/\/repos\/.*$/, "");
     const selectRepo = (slug) => {
       elForm.action = `${root}/repos/${slug}`;
-      localStorage.setItem("repo", slug);
+    };
+    const repoOption = (repo) => {
+      if (!repo || !repo.slug) return null;
+      let option = elRepo.querySelector(`option[value="${CSS.escape(repo.slug)}"]:not([data-view-all-repos])`);
+      if (!option && !isAdvanced && repo.name) {
+        const viewAll = elRepo.querySelector("[data-view-all-repos]");
+        option = new Option(repo.name, repo.slug);
+        viewAll.before(option);
+      }
+      return option;
     };
 
-    // Remember the last searched repo.
-    const last = localStorage.getItem("repo");
-    if (document.body.classList.contains("index") && last && elRepo.querySelector(`option[value="${CSS.escape(last)}"]`)) {
-      elRepo.value = last;
-    }
-    selectRepo(elRepo.value);
-    elRepo.addEventListener("change", (e) => selectRepo(e.target.value));
+    // Every search form uses the same last submitted repository.
+    const last = repoOption(savedRepo);
+    if (last) elRepo.value = last.value;
+    if (elRepo.value) selectRepo(elRepo.value);
+    elRepo.addEventListener("change", (e) => {
+      if (elRepo.selectedOptions[0].hasAttribute("data-view-all-repos")) {
+        window.location.assign(elRepo.value);
+        return;
+      }
+      selectRepo(e.target.value);
+    });
 
     // Keep search URLs clean by excluding empty search params.
     elForm.addEventListener("submit", () => {
+      if (elRepo.value && !elRepo.selectedOptions[0].hasAttribute("data-view-all-repos")) {
+        localStorage.setItem("repo", JSON.stringify({
+          name: elRepo.selectedOptions[0].textContent,
+          slug: elRepo.value,
+        }));
+      }
       const empty = Array.from(elForm.querySelectorAll("input, select")).filter((el) => !el.value.trim());
       empty.forEach((el) => (el.disabled = true));
       setTimeout(() => empty.forEach((el) => (el.disabled = false)), 0);

@@ -52,6 +52,7 @@
           {% if pkg.package is defined %}
           <tr><th>Package</th><td>{{ pkg.package }}</td></tr>
           {% endif %}
+          {% if pkg.pkg_base %}<tr><th>Source package</th><td>{{ pkg.pkg_base }}</td></tr>{% endif %}
           <tr>
             <th>Binary names</th>
             <td>
@@ -64,7 +65,6 @@
               </div>
             </td>
           </tr>
-          {% if pkg.pkg_base %}<tr><th>Source package</th><td>{{ pkg.pkg_base }}</td></tr>{% endif %}
           {% if (pkg.subrepo is defined and pkg.subrepo) or (pkg.meta.subrepos is defined and pkg.meta.subrepos | length > 0) %}
           <tr>
             <th>Subrepos</th>

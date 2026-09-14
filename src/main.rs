@@ -104,6 +104,7 @@ async fn main() {
         }
     };
     log::info!("loaded {} repos", repos.len());
+    handlers::site::init_latest_repos(&repos);
 
     // Autocomplete fields.
     let licenses = Suggestions::new(load(mgr.get_licenses().await, "licenses"));
