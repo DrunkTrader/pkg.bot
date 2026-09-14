@@ -575,21 +575,28 @@ fn transform_package(
 /// Sanitize a package name to e URL-safe slug.
 /// eg: freebsd `www/nginx`, nix `emacsPackages."0blayout"` etc.
 fn make_slug(trackname: &str) -> String {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+
+    // Reserve an escape char for the empty name. Escape dot-only path
+    // segments so browsers don't strip them away when the slugs are in URIs.
+    if trackname.is_empty() {
+        return "~".to_string();
+    }
+    let dot_segment = matches!(trackname, "." | "..");
     let mut out = String::with_capacity(trackname.len());
-
-    for c in trackname.chars() {
-        match c {
-            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '.' | '_' | '~' | '+' | '@' => out.push(c),
-
-            // Separators become a dash and all other special chars are dropped.
-            c if (c.is_whitespace() || matches!(c, '/' | '\\' | ':')) && !out.ends_with('-') => {
-                out.push('-')
-            }
-            _ => {}
+    for b in trackname.bytes() {
+        if b.is_ascii_alphanumeric()
+            || matches!(b, b'-' | b'_' | b'+' | b'@')
+            || (b == b'.' && !dot_segment)
+        {
+            out.push(b as char);
+        } else {
+            out.push('~');
+            out.push(HEX[(b >> 4) as usize] as char);
+            out.push(HEX[(b & 15) as usize] as char);
         }
     }
-
-    out.trim_matches(['-', '.']).to_string()
+    out
 }
 
 /// Make the package page URL for nixpkgs as repology doesn't have it.
@@ -802,39 +809,37 @@ mod tests {
 
     #[test]
     fn slugs() {
-        // `+` and `@` retained.
-        assert_eq!(make_slug("gtk+"), "gtk+");
-        assert_eq!(
-            make_slug("python314Packages.redis"),
-            "python314Packages.redis"
-        );
-        assert_eq!(make_slug("node@22"), "node@22");
+        for name in ["gtk+", "python314Packages.redis", "node@22", "foo-bar_1", ".foo-"] {
+            assert_eq!(make_slug(name), name);
+        }
+        for (name, expected) in [
+            ("www/nginx", "www~2Fnginx"),
+            ("a//b", "a~2F~2Fb"),
+            ("a:b", "a~3Ab"),
+            ("a b", "a~20b"),
+            ("emacsPackages.\"0blayout\"", "emacsPackages.~220blayout~22"),
+            ("/foo/", "~2Ffoo~2F"),
+            (".", "~2E"),
+            ("..", "~2E~2E"),
+            ("", "~"),
+            ("~", "~7E"),
+            ("~2F", "~7E2F"),
+            ("%2F", "~252F"),
+            ("é", "~C3~A9"),
+        ] {
+            assert_eq!(make_slug(name), expected);
+        }
+    }
 
-        // Separators are turned into dashes.
-        assert_eq!(make_slug("www/nginx"), "www-nginx");
-        assert_eq!(
-            make_slug("libudev-zero hotplugging helper"),
-            "libudev-zero-hotplugging-helper"
-        );
-        assert_eq!(make_slug("a//b"), "a-b");
-
-        // Other special chars are dropped.
-        assert_eq!(
-            make_slug("emacsPackages.\"0blayout\""),
-            "emacsPackages.0blayout"
-        );
-        assert_eq!(
-            make_slug("vscode-extensions.\"1Password\".op-vscode"),
-            "vscode-extensions.1Password.op-vscode"
-        );
-        assert_eq!(
-            make_slug("emacsPackages.\"term+key-intercept\""),
-            "emacsPackages.term+key-intercept"
-        );
-
-        // leading/trailing separators are stripped.
-        assert_eq!(make_slug("/foo/"), "foo");
-        assert_eq!(make_slug(".."), "");
+    #[test]
+    fn slug_collisions() {
+        let names = [
+            "a-b", "a/b", "a//b", "a:b", "a b", "a\\b", "a~2Fb",
+            "foo", "\"foo\"", "/foo/", "-foo-", ".foo.",
+            "", ".", "..", "猫", "犬", "~", "~2E", "~2E~2E", "%2F",
+        ];
+        let slugs: std::collections::HashSet<_> = names.iter().map(|s| make_slug(s)).collect();
+        assert_eq!(slugs.len(), names.len());
     }
 
     #[test]
