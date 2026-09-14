@@ -39,8 +39,7 @@
               <th>Version</th>
               <td class="hstack">
                 {% if pkg.version %}{{ pkg.version }}{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
-                {% set status = pkg.status %}
-                {% include "status-badge.html" %}
+                <span class="status">{{ pkg.status }}</span>
               </td>
             </tr>
             <tr>
@@ -82,7 +81,7 @@
                 {%- for l in pkg.licenses %}
                 <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}">{{ l }}</a>
                 {%- endfor %}
-                {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge" data-variant="warning">Non-free</span>{% endif %}
+                {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge non-free">Non-free</span>{% endif %}
               </td>
             </tr>
             {% endif %}

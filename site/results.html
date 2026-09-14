@@ -30,16 +30,16 @@
     <div class="packages-wrap card" role="region" aria-labelledby="results-summary" tabindex="0">
       <table class="packages" aria-labelledby="results-summary">
         <colgroup>
-          <col class="col-package" />
           <col class="col-version" />
+          <col class="col-package" />
           <col class="col-license" />
           <col class="col-maintainer" />
           <col class="col-updated" />
         </colgroup>
         <thead>
           <tr>
-            <th scope="col" class="col-package">Package</th>
             <th scope="col" class="col-version">Version</th>
+            <th scope="col" class="col-package">Package</th>
             <th scope="col" class="col-license">License</th>
             <th scope="col" class="col-maintainer">Maintainer(s)</th>
             <th scope="col" class="col-updated">Updated</th>
@@ -48,11 +48,14 @@
         <tbody>
           {%- for p in results.packages %}
           <tr>
+            <td class="col-version">
+              {% if p.version %}<span class="package-version" title="{{ p.version }}">{{ p.version }}</span>{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
+              <span class="status">{{ p.status }}</span>
+              {% if p.installed_bytes %}<span class="package-size text-light">{{ p.installed_bytes | bytes }} installed</span>{% endif %}
+            </td>
             <th scope="row" class="col-package package-details">
               <div class="package-heading">
                 <a class="package-name" href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a>
-                {% set status = p.status %}
-                {% include "status-badge.html" %}
               </div>
               {% if p.slug != p.name %}<p class="slug"><code><small>{{ p.slug }}</small></code></p>{% endif %}
               {% if p.excerpt or p.description %}
@@ -70,14 +73,10 @@
               </div>
               {% endif %}
             </th>
-            <td class="col-version">
-              {% if p.version %}<span class="package-version" title="{{ p.version }}">{{ p.version }}</span>{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
-              {% if p.installed_bytes %}<span class="package-size text-light">{{ p.installed_bytes | bytes }} installed</span>{% endif %}
-            </td>
             <td class="col-license package-filters">
               <div class="hstack">
                 {%- if p.is_nonfree %}
-                <a class="badge" data-variant="danger" href="{{ add_url.is_nonfree | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
+                <a class="badge non-free" href="{{ add_url.is_nonfree | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
                 {%- endif %}
                 {%- for l in p.licenses %}
                 <a class="badge outline" href="{{ add_url.license | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>

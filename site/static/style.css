@@ -57,11 +57,6 @@ body {
   }
 }
 
-.tagline {
-  font-size: var(--text-7);
-  margin: 0;
-}
-
 /* Search form */
 .search-bar {
   fieldset.group {
@@ -204,17 +199,17 @@ body.index {
   }
 }
 
-.status-badge{
-  padding: 2px var(--space-2);
+.status {
+  color: var(--muted-foreground);
+  font-size: var(--text-7);
+}
 
-  &[data-variant="info"] {
-    --status-color: light-dark(#2563a6, #80b8f0);
-    color: var(--status-color);
-    background-color: light-dark(
-      color-mix(in srgb, var(--status-color) 10%, transparent),
-      color-mix(in srgb, var(--status-color) 30%, transparent)
-    );
-  }
+.non-free {
+  color: var(--danger);
+  background-color: light-dark(
+    color-mix(in srgb, var(--danger) 10%, transparent),
+    color-mix(in srgb, var(--danger) 30%, transparent)
+  );
 }
 
 /* Search results */
@@ -322,7 +317,7 @@ body.index {
   }
 
   .package-name {
-    font-size: var(--text-6);
+    font-size: var(--text-5);
     font-weight: var(--font-semibold);
   }
 
