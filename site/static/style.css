@@ -1,8 +1,8 @@
 :root {
   --container-max: 1300px;
   --primary: light-dark(#111, #fafafa);
-  --radius-full: 3px;
-  --radius-medium: 3px;
+  --radius-full: 4px;
+  --radius-medium: 4px;
   --input: light-dark(#999, #333);
 }
 
@@ -23,6 +23,8 @@ body {
 .icon-search { --icon: url("/static/search.svg"); }
 .icon-avatar { --icon: url("/static/avatar.svg"); }
 .icon-globe { --icon: url("/static/globe.svg"); }
+.icon-external-link { --icon: url("/static/external-link.svg"); }
+.icon-code { --icon: url("/static/code.svg"); }
 
 /* The feed icon keeps its brand orange instead of inheriting currentColor. */
 .icon-rss {
@@ -181,12 +183,6 @@ body.index {
     flex-wrap: wrap;
     gap: var(--space-3);
     margin: var(--space-1) 0 0;
-
-    code {
-      padding: 0;
-      background: none;
-      color: var(--muted-foreground);
-    }
   }
 
   td.col-distro,
@@ -205,6 +201,19 @@ body.index {
     text-align: right;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
+  }
+}
+
+.status-badge{
+  padding: 2px var(--space-2);
+
+  &[data-variant="info"] {
+    --status-color: light-dark(#2563a6, #80b8f0);
+    color: var(--status-color);
+    background-color: light-dark(
+      color-mix(in srgb, var(--status-color) 10%, transparent),
+      color-mix(in srgb, var(--status-color) 30%, transparent)
+    );
   }
 }
 
@@ -412,7 +421,60 @@ aside {
   }
 }
 
+pre {
+  border: 1px solid var(--border);
+}
+code {
+  font-size: var(--text-regular);
+}
+
 /* Package page */
+.package-overview {
+  padding: 0;
+
+  table tr {
+    border: 0;
+  }
+
+  .package-details-table,
+  .package-actions {
+    min-width: 0;
+    padding: var(--space-6);
+  }
+
+  .package-actions {
+    border-left: 1px solid var(--border);
+
+    .button {
+      justify-content: flex-start;
+      white-space: normal;
+      text-align: left;
+    }
+
+    .icon {
+      flex: none;
+    }
+  }
+
+  .package-install {
+    margin-top: auto;
+    margin-inline: calc(-1 * var(--space-6));
+    margin-bottom: calc(-1 * var(--space-6));
+    padding: var(--space-6);
+    border-top: 1px solid var(--border);
+    min-width: 0;
+    font-size: var(--text-7);
+
+    h4 {
+      margin: 0 0 var(--space-3);
+    }
+
+    pre {
+      margin: 0;
+    }
+  }
+}
+
 .package {
   .breadcrumb {
     font-size: var(--text-8);
@@ -470,6 +532,11 @@ aside {
 }
 
 @media screen and (max-width: 768px) {
+  .package-overview .package-actions {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
   .search-bar select {
     max-width: 40%;
   }

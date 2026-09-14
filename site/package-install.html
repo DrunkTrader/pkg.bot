@@ -1,0 +1,62 @@
+{%- set install_name = pkg.meta.trackname | default(value=pkg.name) -%}
+{%- if not install_name -%}
+  {%- set install_name = pkg.name -%}
+{%- endif -%}
+<section class="package-install" aria-label="Install">
+  <h4>Install</h4>
+  {%- if repo.manager == "nix" %}
+    <pre><code>nix-shell -p {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "pacman" %}
+    <pre><code>pacman -S {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "aur" %}
+    {%- set aur_base = pkg.pkg_base | default(value=install_name) %}
+    {%- if not aur_base %}
+      {%- set aur_base = install_name %}
+    {%- endif %}
+    <pre><code>git clone https://aur.archlinux.org/{{ aur_base }}.git{{ "\n" -}}
+      cd {{ aur_base }}{{ "\n" -}}
+      makepkg -si</code></pre>
+  {%- elif repo.manager == "apt" %}
+    <pre><code>apt install {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "apk" %}
+    <pre><code>apk add {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "dnf" or repo.manager == "openmandriva" %}
+    <pre><code>dnf install {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "yum" %}
+    <pre><code>yum install {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "zypper" %}
+    <pre><code>zypper install {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "portage" %}
+    <pre><code>emerge --ask {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "pkg" %}
+    <pre><code>pkg install {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "mageia" %}
+    <pre><code>urpmi {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "openwrt" %}
+    {# OpenWrt track names are source paths; use an emitted binary package name. #}
+    {%- set openwrt_name = pkg.name %}
+    {%- if pkg.binary_names is defined and pkg.binary_names | length > 0 %}
+      {%- set openwrt_name = pkg.binary_names | first %}
+    {%- endif %}
+    <p class="text-light">OpenWrt 25.12 and newer:</p>
+    <pre><code>apk add {{ openwrt_name -}}</code></pre>
+    <p class="text-light mt-2">OpenWrt 24.10 and older:</p>
+    <pre><code>opkg install {{ openwrt_name -}}</code></pre>
+  {%- elif repo.manager == "void" %}
+    <pre><code>xbps-install {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "solus" %}
+    <pre><code>eopkg install {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "slackware" %}
+    <pre><code>slackpkg install {{ install_name -}}</code></pre>
+  {%- elif repo.manager == "slackbuilds" %}
+    <p class="text-light">With sbopkg installed:</p>
+    <pre><code>sbopkg -i {{ install_name | split(pat="/") | last -}}</code></pre>
+  {%- elif repo.manager == "openbsd" %}
+    <p class="text-light">With the matching OpenBSD ports tree installed:</p>
+    <pre><code>make -C /usr/ports/{{ install_name }} install</code></pre>
+  {%- elif repo.manager == "macports" %}
+    <pre><code>sudo port install {{ install_name -}}</code></pre>
+  {%- else %}
+    <p class="text-light">See the repository’s installation instructions for this package.</p>
+  {%- endif %}
+</section>

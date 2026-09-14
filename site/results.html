@@ -8,11 +8,12 @@
 <section class="results">
   <div class="hstack justify-between mb-4">
     <div class="hstack">
-      <p id="results-summary" class="summary text-light">
+      <div id="results-summary" class="summary text-light">
         {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
         {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
-        {%- if repo.brand_color %} <span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span>{% endif %} {{ repo.name }}
-      </p>
+        {%- if repo.brand_color %} <span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span>{% endif %} <a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">{{ repo.name }}</a>
+        {% if render_time %}<span aria-label="Rendered in {{ render_time }}">&mdash; {{ render_time }}</span>{% endif %}
+      </div>
 
       {% include "current-filters.html" %}
     </div>
@@ -50,9 +51,10 @@
             <th scope="row" class="col-package package-details">
               <div class="package-heading">
                 <a class="package-name" href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a>
-                <span class="badge outline"{% if p.status in ["outdated", "incorrect", "untrusted"] %} data-variant="warning"{% endif %}>{{ p.status }}</span>
+                {% set status = p.status %}
+                {% include "status-badge.html" %}
               </div>
-              {% if p.slug != p.name %}<p class="slug"><code>{{ p.slug }}</code></p>{% endif %}
+              {% if p.slug != p.name %}<p class="slug"><code><small>{{ p.slug }}</small></code></p>{% endif %}
               {% if p.excerpt or p.description %}
               <p class="excerpt">
                 {%- if p.excerpt %}{{ p.excerpt }}

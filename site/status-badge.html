@@ -1,0 +1,12 @@
+{# Expects status to contain the package status. #}
+{%- set variant = "secondary" -%}
+{%- if status == "newest" -%}
+  {%- set variant = "success" -%}
+{%- elif status in ["outdated", "legacy", "noscheme"] -%}
+  {%- set variant = "warning" -%}
+{%- elif status in ["incorrect", "untrusted"] -%}
+  {%- set variant = "danger" -%}
+{%- elif status in ["unique", "devel", "rolling"] -%}
+  {%- set variant = "info" -%}
+{%- endif -%}
+<span class="badge outline status-badge" data-variant="{{ variant }}">{{ status }}</span>

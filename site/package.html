@@ -7,152 +7,154 @@
 {# Every value interpolated into it is URL encoded, so it is output unescaped. #}
 {% set filter_url = consts.root_url ~ "/repos/" ~ repo.slug ~ "?" %}
 
-<div class="row">
-  <article class="col-8 package">
-    <nav aria-label="Breadcrumb">
-      <ol class="unstyled hstack gap-2 breadcrumb">
-        <li><a href="{{ consts.root_url | safe }}/" class="unstyled">Home</a></li>
-        <li aria-hidden="true">/</li>
-        <li><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}" class="unstyled">{% if repo.brand_color %}<span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span> {% endif %}{{ repo.name }}</a></li>
-        <li aria-hidden="true">/</li>
-        <li aria-current="page">{{ pkg.name }}</li>
-      </ol>
-    </nav>
+<article class="package">
+  <nav aria-label="Breadcrumb">
+    <ol class="unstyled hstack gap-2 breadcrumb">
+      <li><a href="{{ consts.root_url | safe }}/" class="unstyled">Home</a></li>
+      <li aria-hidden="true">/</li>
+      <li><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}" class="unstyled">{% if repo.brand_color %}<span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span> {% endif %}{{ repo.name }}</a></li>
+      <li aria-hidden="true">/</li>
+      <li aria-current="page">{{ pkg.name }}</li>
+    </ol>
+  </nav>
 
-    <header class="head">
-      <h1 class="hstack">
-        {{ pkg.name }}
-        {%- if pkg.version %}<span class="badge outline">{{ pkg.version }}</span>{% endif %}
-      </h1>
-      {% if pkg.slug != pkg.name %}<p class="slug"><code>{{ pkg.slug }}</code></p>{% endif %}
-      {% if pkg.excerpt %}<p class="excerpt">{{ pkg.excerpt }}</p>{% endif %}
-    </header>
+  <header class="head">
+    <h1 class="hstack">
+      {{ pkg.name }}
+      {%- if pkg.version %}<span class="badge outline">{{ pkg.version }}</span>{% endif %}
+    </h1>
+    {% if pkg.slug != pkg.name %}<p class="slug"><code class="text-light"><small>{{ pkg.slug }}</small></code></p>{% endif %}
+    {% if pkg.excerpt %}<p class="excerpt">{{ pkg.excerpt }}</p>{% endif %}
+  </header>
 
-    {% if pkg.description and pkg.description != pkg.excerpt %}<p>{{ pkg.description }}</p>{% endif %}
+  {% if pkg.description and pkg.description != pkg.excerpt %}<p>{{ pkg.description }}</p>{% endif %}
 
-    <div class="card table mt-6">
-      <table aria-label="Package details">
-        <tbody>
-          <tr>
-            <th>Version</th>
-            <td>{% if pkg.version %}{{ pkg.version }}{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}</td>
-          </tr>
-          <tr>
-            <th>Status</th>
-            <td><span class="badge outline"{% if pkg.status in ["outdated", "incorrect", "untrusted"] %} data-variant="warning"{% endif %}>{{ pkg.status }}</span></td>
-          </tr>
-          <tr>
-            <th>Project name</th>
-            <td>{% if pkg.project_name is defined and pkg.project_name %}{{ pkg.project_name }}{% else %}<span class="text-light" aria-label="Project name unavailable">&mdash;</span>{% endif %}</td>
-          </tr>
-          <tr>
-            <th>Binary names</th>
-            <td>
-              <div class="hstack">
-                {% set binary_names = pkg.binary_names | default(value=[]) %}
-                {%- for name in binary_names %}
-                <span class="badge outline">{{ name }}</span>
-                {%- else %}<span class="text-light" aria-label="Binary names unavailable">&mdash;</span>
+  <div class="card package-overview mt-6">
+    <div class="row">
+      <div class="col-8 table package-details-table">
+        <table aria-label="Package details">
+          <tbody>
+            <tr>
+              <th>Version</th>
+              <td class="hstack">
+                {% if pkg.version %}{{ pkg.version }}{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
+                {% set status = pkg.status %}
+                {% include "status-badge.html" %}
+              </td>
+            </tr>
+            <tr>
+              <th>Project name</th>
+              <td>{% if pkg.project_name is defined and pkg.project_name %}{{ pkg.project_name }}{% else %}<span class="text-light" aria-label="Project name unavailable">&mdash;</span>{% endif %}</td>
+            </tr>
+            {% if pkg.meta.trackname is defined %}
+            <tr><th>Track name</th><td>{{ pkg.meta.trackname }}</td></tr>
+            {% endif %}
+            <tr>
+              <th>Binary names</th>
+              <td>
+                <div class="hstack">
+                  {% set binary_names = pkg.binary_names | default(value=[]) %}
+                  {%- for name in binary_names %}
+                  <span class="badge outline">{{ name }}</span>
+                  {%- else %}<span class="text-light" aria-label="Binary names unavailable">&mdash;</span>
+                  {%- endfor %}
+                </div>
+              </td>
+            </tr>
+            {% if pkg.pkg_base %}<tr><th>Source package</th><td>{{ pkg.pkg_base }}</td></tr>{% endif %}
+            {% if (pkg.subrepo is defined and pkg.subrepo) or (pkg.meta.subrepos is defined and pkg.meta.subrepos | length > 0) %}
+            <tr>
+              <th>Subrepos</th>
+              <td class="hstack">
+                {% if pkg.meta.subrepos is defined and pkg.meta.subrepos | length > 0 %}
+                {%- for subrepo in pkg.meta.subrepos %}
+                <span class="badge outline">{{ subrepo }}</span>
                 {%- endfor %}
-              </div>
-            </td>
-          </tr>
-          {% if pkg.pkg_base %}<tr><th>Source package</th><td>{{ pkg.pkg_base }}</td></tr>{% endif %}
-          {% if (pkg.subrepo is defined and pkg.subrepo) or (pkg.meta.subrepos is defined and pkg.meta.subrepos | length > 0) %}
-          <tr>
-            <th>Subrepos</th>
-            <td class="hstack">
-              {% if pkg.meta.subrepos is defined and pkg.meta.subrepos | length > 0 %}
-              {%- for subrepo in pkg.meta.subrepos %}
-              <span class="badge outline">{{ subrepo }}</span>
-              {%- endfor %}
-              {% else %}<span class="badge outline">{{ pkg.subrepo }}</span>{% endif %}
-            </td>
-          </tr>
-          {% endif %}
-          {% if pkg.licenses | length > 0 %}
-          <tr>
-            <th>Licenses</th>
-            <td class="hstack">
-              {%- for l in pkg.licenses %}
-              <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}">{{ l }}</a>
-              {%- endfor %}
-              {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge" data-variant="warning">Non-free</span>{% endif %}
-            </td>
-          </tr>
-          {% endif %}
-          {% if pkg.groups | length > 0 %}<tr><th>Groups</th><td>{{ pkg.groups | join(sep=", ") }}</td></tr>{% endif %}
-          {% if pkg.keywords | length > 0 %}
-          <tr>
-            <th>Tags</th>
-            <td class="hstack tags">
-              {%- for k in pkg.keywords %}
-              <a href="{{ filter_url | safe }}tag={{ k | urlencode }}">#{{ k }}</a>
-              {%- endfor %}
-            </td>
-          </tr>
-          {% endif %}
-          {% if pkg.maintainers | length > 0 %}
-          <tr>
-            <th>Maintainers</th>
-            <td>
-              <div class="vstack gap-1 package-maintainers">
-                {%- for m in pkg.maintainers %}
-                <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}"><span class="icon icon-avatar" aria-hidden="true"></span><span>{{ m.name | default(value=m.handle) }}</span></a>
+                {% else %}<span class="badge outline">{{ pkg.subrepo }}</span>{% endif %}
+              </td>
+            </tr>
+            {% endif %}
+            {% if pkg.licenses | length > 0 %}
+            <tr>
+              <th>Licenses</th>
+              <td class="hstack">
+                {%- for l in pkg.licenses %}
+                <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}">{{ l }}</a>
                 {%- endfor %}
-              </div>
-            </td>
-          </tr>
-          {% endif %}
-        </tbody>
-      </table>
+                {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge" data-variant="warning">Non-free</span>{% endif %}
+              </td>
+            </tr>
+            {% endif %}
+            {% if pkg.groups | length > 0 %}<tr><th>Groups</th><td>{{ pkg.groups | join(sep=", ") }}</td></tr>{% endif %}
+            {% if pkg.keywords | length > 0 %}
+            <tr>
+              <th>Tags</th>
+              <td class="hstack tags">
+                {%- for k in pkg.keywords %}
+                <a href="{{ filter_url | safe }}tag={{ k | urlencode }}">#{{ k }}</a>
+                {%- endfor %}
+              </td>
+            </tr>
+            {% endif %}
+            {% if pkg.maintainers | length > 0 %}
+            <tr>
+              <th>Maintainers</th>
+              <td>
+                <div class="vstack gap-1 package-maintainers">
+                  {%- for m in pkg.maintainers %}
+                  <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}"><span class="icon icon-avatar" aria-hidden="true"></span><span>{{ m.name | default(value=m.handle) }}</span></a>
+                  {%- endfor %}
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      <div class="col-4 vstack package-actions">
+        <nav class="vstack" aria-label="Package links">
+          {% if pkg_url is defined %}<a class="button" data-variant="primary" href="{{ pkg_url }}" rel="noreferrer noopener"><span class="icon icon-external-link" aria-hidden="true"></span>View in {{ repo.name }}</a>{% endif %}
+          {% if pkg.homepage_url %}<a class="button outline" href="{{ pkg.homepage_url }}" rel="noreferrer noopener"><span class="icon icon-globe" aria-hidden="true"></span>Homepage</a>{% endif %}
+          {% if source_url is defined %}<a class="button outline" href="{{ source_url }}" rel="noreferrer noopener"><span class="icon icon-code" aria-hidden="true"></span>Package recipe</a>{% endif %}
+        </nav>
+        {% include "package-install.html" %}
+      </div>
     </div>
+  </div>
 
-    <div class="card table mt-6">
-      <table aria-label="Repository and build details">
-        <tbody>
-          <tr>
-            <th>Repository</th>
-            <td><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">{{ repo.name }}</a> ({{ repo.manager }})</td>
-          </tr>
-          <tr>
-            <th>Platforms</th>
-            <td class="hstack">
-              {%- for pf in pkg.platforms %}
-              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}platform={{ pf | urlencode }}">{{ pf }}</a>
-              {%- else %}
-              {% if pkg.meta.arch is defined and pkg.meta.arch %}
-              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}platform={{ pkg.meta.arch | urlencode }}">{{ pkg.meta.arch }}</a>
-              {% else %}<span class="text-light" aria-label="Platforms unavailable">&mdash;</span>{% endif %}
-              {%- endfor %}
-            </td>
-          </tr>
-          {% if pkg.download_bytes %}<tr><th>Download size</th><td>{{ pkg.download_bytes | bytes }}</td></tr>{% endif %}
-          {% if pkg.installed_bytes %}<tr><th>Installed size</th><td>{{ pkg.installed_bytes | bytes }}</td></tr>{% endif %}
-          <tr><th>First seen</th><td>{{ pkg.created_at | truncate(length=10, end="") }}</td></tr>
-          <tr><th>Last changed</th><td>{{ pkg.updated_at | truncate(length=10, end="") }}</td></tr>
-          {%- for key, val in pkg.meta %}
-          {% if key != "id" and key != "shadow" and key != "subrepos" and key != "arch" and key != "versionclass" and key != "flags" %}
-          <tr><th>{{ key | replace(from="_", to=" ") | capitalize }}</th><td>{{ val }}</td></tr>
-          {% endif %}
-          {%- endfor %}
-        </tbody>
-      </table>
-    </div>
-  </article>
-
-  <aside class="col-3 offset-1">
-    <nav class="card vstack links" aria-label="Package links">
-      {% if pkg_url is defined %}<a href="{{ pkg_url }}" rel="noreferrer noopener">View in {{ repo.name }}</a>{% endif %}
-      {% if pkg.homepage_url %}<a href="{{ pkg.homepage_url }}" rel="noreferrer noopener">Homepage</a>{% endif %}
-      {% if source_url is defined %}<a href="{{ source_url }}" rel="noreferrer noopener">Package recipe</a>{% endif %}
-    </nav>
-
-    <article class="card mt-4">
-      <h4>Install</h4>
-      {% set install_name = pkg.meta.trackname | default(value=pkg.slug) %}
-      <pre><code>{% if repo.manager == "nix" %}nix-env -iA nixpkgs.{{ install_name }}{% elif repo.manager == "pacman" %}pacman -S {{ install_name }}{% elif repo.manager == "aur" %}git clone https://aur.archlinux.org/{{ install_name }}.git{% elif repo.manager == "apt" %}apt install {{ install_name }}{% elif repo.manager == "apk" %}apk add {{ install_name }}{% else %}{{ install_name }}{% endif %}</code></pre>
-    </article>
-  </aside>
-</div>
+  <div class="card table mt-6">
+    <table aria-label="Repository and build details">
+      <tbody>
+        <tr>
+          <th>Repository</th>
+          <td><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">{{ repo.name }}</a> ({{ repo.manager }})</td>
+        </tr>
+        {% if pkg.meta.family is defined %}
+        <tr><th>Family</th><td>{{ pkg.meta.family }}</td></tr>
+        {% endif %}
+        {% if pkg.download_bytes %}<tr><th>Download size</th><td>{{ pkg.download_bytes | bytes }}</td></tr>{% endif %}
+        {% if pkg.installed_bytes %}<tr><th>Installed size</th><td>{{ pkg.installed_bytes | bytes }}</td></tr>{% endif %}
+        <tr><th>First seen</th><td>{{ pkg.created_at | truncate(length=10, end="") }}</td></tr>
+        <tr><th>Last changed</th><td>{{ pkg.updated_at | truncate(length=10, end="") }}</td></tr>
+        {%- for key, val in pkg.meta %}
+        {% if key != "id" and key != "shadow" and key != "subrepos" and key != "arch" and key != "versionclass" and key != "flags" and key != "trackname" and key != "family" %}
+        <tr><th>{{ key | replace(from="_", to=" ") | capitalize }}</th><td>{{ val }}</td></tr>
+        {% endif %}
+        {%- endfor %}
+        <tr>
+          <th>Platforms</th>
+          <td class="hstack">
+            {%- for pf in pkg.platforms %}
+            <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}platform={{ pf | urlencode }}">{{ pf }}</a>
+            {%- else %}
+            {% if pkg.meta.arch is defined and pkg.meta.arch %}
+            <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}platform={{ pkg.meta.arch | urlencode }}">{{ pkg.meta.arch }}</a>
+            {% else %}<span class="text-light" aria-label="Platforms unavailable">&mdash;</span>{% endif %}
+            {%- endfor %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</article>
 {% endblock %}
