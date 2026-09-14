@@ -1,5 +1,7 @@
 //! Imports a Repology PostgreSQL dump into a fresh SQLite database.
 
+mod licenses;
+
 use crate::models::normalize_version;
 
 use std::{collections::HashMap, error::Error, path::Path, time::Instant};
@@ -502,7 +504,7 @@ fn transform_package(
     let name = p.visiblename;
     let name_norm = normalize_name(&name);
 
-    let licenses = uniq(p.licenses);
+    let licenses = licenses::normalize(p.licenses);
     let platforms = uniq(p.platforms);
     let subrepos = uniq(p.subrepos);
     let groups: Vec<String> = p.category.into_iter().collect();

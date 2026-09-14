@@ -479,10 +479,6 @@ code {
 }
 
 .package {
-  .breadcrumb {
-    font-size: var(--text-8);
-  }
-
   h1 {
     margin: var(--space-4) 0 0;
   }
