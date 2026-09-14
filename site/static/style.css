@@ -1,5 +1,5 @@
 :root {
-  --container-max: 1300px;
+  --container-max: 1200px;
   --primary: light-dark(#111, #fafafa);
   --radius-full: 4px;
   --radius-medium: 4px;
@@ -25,6 +25,7 @@ body {
 .icon-globe { --icon: url("/static/globe.svg"); }
 .icon-external-link { --icon: url("/static/external-link.svg"); }
 .icon-code { --icon: url("/static/code.svg"); }
+.icon-package { --icon: url("/static/package.svg"); }
 
 /* The feed icon keeps its brand orange instead of inheriting currentColor. */
 .icon-rss {
@@ -265,9 +266,9 @@ body.index {
   margin: 0;
   border-collapse: collapse;
 
-  .col-package { width: 45%; }
+  .col-package { width: 40%; }
   .col-version { width: 10%; }
-  .col-license { width: 12%; }
+  .col-license { width: 17%; }
   .col-maintainer { width: 23%; }
   .col-updated { width: 10%; }
 

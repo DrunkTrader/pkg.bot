@@ -65,7 +65,7 @@
           </td>
           <td class="col-maintainers">{% if r.num_maintainers %}{{ r.num_maintainers | num }}{% else %}<span class="text-light" aria-label="Maintainer count unavailable">—</span>{% endif %}</td>
           <td class="col-updated text-light">
-            <time datetime="{{ r.updated_at | truncate(length=10, end="") }}">{{ r.updated_at | truncate(length=10, end="") }}</time>
+            <time datetime="{{ r.updated_at | truncate(length=10, end="") }}">{{ r.updated_at | truncate(length=10, end="") | date(format="%-d %b %Y") }}</time>
           </td>
         </tr>
         {%- else %}

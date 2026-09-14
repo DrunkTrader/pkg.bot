@@ -188,6 +188,17 @@ pub async fn render_search(
     tpl_ctx.insert("q", &q);
     insert_search(&mut tpl_ctx, &q);
     tpl_ctx.insert("results", &results);
+    let package_urls: std::collections::HashMap<_, _> = results
+        .packages
+        .iter()
+        .filter_map(|pkg| {
+            repo.pkg_url_template
+                .as_deref()
+                .and_then(|tpl| package_url(tpl, pkg))
+                .map(|url| (pkg.slug.as_str(), url))
+        })
+        .collect();
+    tpl_ctx.insert("package_urls", &package_urls);
 
     // Current filters.
     let base_url = format!("{}/repos/{}", ctx.consts.root_url, repo.slug);
@@ -264,6 +275,22 @@ pub async fn get_package(
     tpl_ctx.insert("repo", repo);
 
     // The package's pages on the repo's own website.
+    for (key, tpl) in [
+        ("pkg_url", &repo.pkg_url_template),
+        ("source_url", &repo.source_url_template),
+    ] {
+        if let Some(url) = tpl.as_deref().and_then(|t| package_url(t, &pkg)) {
+            tpl_ctx.insert(key, &url);
+        }
+    }
+
+    tpl_ctx.insert("pkg", &pkg);
+
+    render(&ctx, "package.html", &mut tpl_ctx)
+}
+
+/// Expand a repository URL using the same fields on detail and results pages.
+fn package_url(template: &str, pkg: &Package) -> Option<String> {
     let fields = url_template::Fields {
         slug: &pkg.slug,
         package: Some(pkg.package.as_str()),
@@ -274,21 +301,7 @@ pub async fn get_package(
         arch: None,
     };
 
-    for (key, tpl) in [
-        ("pkg_url", &repo.pkg_url_template),
-        ("source_url", &repo.source_url_template),
-    ] {
-        if let Some(url) = tpl
-            .as_deref()
-            .and_then(|t| url_template::expand(t, &fields))
-        {
-            tpl_ctx.insert(key, &url);
-        }
-    }
-
-    tpl_ctx.insert("pkg", &pkg);
-
-    render(&ctx, "package.html", &mut tpl_ctx)
+    url_template::expand(template, &fields)
 }
 
 /// Template context common to all pages.

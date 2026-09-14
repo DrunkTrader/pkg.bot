@@ -6,6 +6,8 @@
 
 {% block content %}
 <section class="results">
+  <h1>&ldquo;{{ term }}&rdquo;</h1>
+
   <div class="hstack justify-between mb-4">
     <div class="hstack">
       <div id="results-summary" class="summary text-light">
@@ -55,6 +57,7 @@
             <th scope="row" class="col-package package-details">
               <div class="package-heading">
                 <a class="package-name" href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a>
+                {% if package_urls[p.slug] is defined %}<a class="text-light" href="{{ package_urls[p.slug] }}" rel="noreferrer noopener" aria-label="View {{ p.name }} on {{ repo.name }}" title="View on {{ repo.name }}"><span class="icon icon-external-link" aria-hidden="true"></span></a>{% endif %}
               </div>
               {% if p.slug != p.name %}<p class="slug"><code><small>{{ p.slug }}</small></code></p>{% endif %}
               {% if p.excerpt or p.description %}
@@ -92,7 +95,7 @@
               </div>
             </td>
             <td class="col-updated text-light">
-              {% if p.updated_at %}<time datetime="{{ p.updated_at | truncate(length=10, end="") }}">{{ p.updated_at | truncate(length=10, end="") }}</time>{% else %}<span aria-label="Update date unavailable">—</span>{% endif %}
+              {% if p.updated_at %}<time datetime="{{ p.updated_at | truncate(length=10, end="") }}">{{ p.updated_at | truncate(length=10, end="") | date(format="%-d %b %Y") }}</time>{% else %}<span aria-label="Update date unavailable">—</span>{% endif %}
             </td>
           </tr>
           {%- endfor %}

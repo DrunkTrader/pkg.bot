@@ -140,7 +140,7 @@
     </div>
     <div class="col-4 package-actions">
       <nav class="vstack" aria-label="Package links">
-        {% if pkg_url is defined %}<a class="button" data-variant="primary" href="{{ pkg_url }}" rel="noreferrer noopener"><span class="icon icon-external-link" aria-hidden="true"></span>View on {{ repo.name }}</a>{% endif %}
+        {% if pkg_url is defined %}<a class="button" data-variant="primary" href="{{ pkg_url }}" rel="noreferrer noopener"><span class="icon icon-package" aria-hidden="true"></span>View on {{ repo.name }}</a>{% endif %}
         {% if pkg.homepage_url %}<a class="button" data-variant="secondary" href="{{ pkg.homepage_url }}" title="{{ pkg.homepage_url }}" rel="noreferrer noopener"><span class="icon icon-globe" aria-hidden="true"></span><span class="package-link-url">{{ pkg.homepage_url | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_end_matches(pat="/") }}</span></a>{% endif %}
         {% if source_url is defined %}<a class="button" data-variant="secondary" href="{{ source_url }}" title="{{ source_url }}" rel="noreferrer noopener"><span class="icon icon-code" aria-hidden="true"></span><span class="package-link-url">{{ source_url | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_end_matches(pat="/") }}</span></a>{% endif %}
       </nav>
