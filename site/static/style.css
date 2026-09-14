@@ -8,7 +8,14 @@
 
 body {
   min-width: 320px;
-  background: light-dark(#fbfbfb, #111);
+}
+
+th, td {
+  padding: var(--space-4) var(--space-3);
+}
+
+thead th {
+  padding-block: var(--space-3);
 }
 
 .icon {
@@ -18,14 +25,15 @@ body {
   vertical-align: middle;
   background-color: currentColor;
   mask: var(--icon) center / contain no-repeat;
+
+  &.icon-search { --icon: url("/static/search.svg"); }
+  &.icon-avatar { --icon: url("/static/avatar.svg"); }
+  &.icon-globe { --icon: url("/static/globe.svg"); }
+  &.icon-external-link { --icon: url("/static/external-link.svg"); }
+  &.icon-code { --icon: url("/static/code.svg"); }
+  &.icon-package { --icon: url("/static/package.svg"); }
 }
 
-.icon-search { --icon: url("/static/search.svg"); }
-.icon-avatar { --icon: url("/static/avatar.svg"); }
-.icon-globe { --icon: url("/static/globe.svg"); }
-.icon-external-link { --icon: url("/static/external-link.svg"); }
-.icon-code { --icon: url("/static/code.svg"); }
-.icon-package { --icon: url("/static/package.svg"); }
 
 /* The feed icon keeps its brand orange instead of inheriting currentColor. */
 .icon-rss {
@@ -47,15 +55,8 @@ body {
   margin: var(--space-8) 0;
 }
 
-.logo {
-  a {
-    font-size: var(--text-2);
-    font-weight: var(--font-bold);
-    letter-spacing: -0.04em;
-  }
-  img {
-    max-height: 3.5rem;
-  }
+.logo img {
+  max-height: 3.5rem;
 }
 
 /* Search form */
@@ -124,24 +125,16 @@ body.index {
   }
 
   .search-bar {
+    margin-top: var(--space-6);
+    text-align: start;
+
     input, select, button {
       font-size: var(--text-5);
     }
   }
 
-  .logo {
-    a {
-      font-size: var(--text-1);
-    }
-
-    img {
-      max-height: none;
-    }
-  }
-
-  .search-bar {
-    margin-top: var(--space-6);
-    text-align: start;
+  .logo img {
+    max-height: none;
   }
 
   .repos {
@@ -149,95 +142,45 @@ body.index {
   }
 }
 
-/* Repository directory */
-.repos-table {
-  .col-repo { width: 34%; }
-  .col-distro { width: 16%; }
-  .col-manager { width: 12%; }
-  .col-packages { width: 13%; }
-  .col-maintainers { width: 13%; }
-  .col-updated { width: 12%; }
+/* Directory and result row headings. */
+.repo-heading,
+.package-heading {
+  align-items: baseline;
+}
 
-  .repo-details {
-    font-weight: var(--font-normal);
-  }
+.repo-name,
+.package-name {
+  font-weight: var(--font-semibold);
+}
 
-  .repo-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-2);
-  }
+.repo-name {
+  font-size: var(--text-6);
+}
 
-  .repo-name {
-    font-size: var(--text-6);
-    font-weight: var(--font-semibold);
-  }
-
-  .repo-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    margin: var(--space-1) 0 0;
-  }
-
-  td.col-distro,
-  td.col-manager,
-  .repo-links {
-    font-size: var(--text-7);
-  }
-
-  .repo-family {
-    color: var(--muted-foreground);
-  }
-
-  .col-packages,
-  .col-maintainers,
-  .col-updated {
-    text-align: right;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
+.package-name {
+  font-size: var(--text-5);
 }
 
 .status {
   color: var(--muted-foreground);
-  font-size: var(--text-7);
 }
 
 .license-badge {
   display: inline-block;
   max-width: min(20ch, 100%);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.non-free {
-  color: var(--danger);
-  background-color: light-dark(
-    color-mix(in srgb, var(--danger) 10%, transparent),
-    color-mix(in srgb, var(--danger) 30%, transparent)
-  );
 }
 
 /* Search results */
-.results {
-  min-width: 0;
-}
-
-.summary {
+.summary,
+.filters,
+.status,
+.excerpt {
   font-size: var(--text-7);
 }
 
-.filters {
+.filter-badge {
+  background: var(--background);
   gap: var(--space-2);
-  font-size: var(--text-7);
-
-  .filter-badge {
-    background: var(--background);
-    gap: var(--space-2);
-  }
 }
 
 .avatar {
@@ -252,40 +195,19 @@ body.index {
 .packages-wrap {
   overflow-x: auto;
   padding: 0;
-
-  &:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 3px;
-  }
 }
 
 .packages {
-  width: 100%;
-  min-width: 780px;
   table-layout: fixed;
-  margin: 0;
-  border-collapse: collapse;
-
-  .col-package { width: 40%; }
-  .col-version { width: 10%; }
-  .col-license { width: 17%; }
-  .col-maintainer { width: 23%; }
-  .col-updated { width: 10%; }
 
   th,
   td {
-    padding: var(--space-4) var(--space-3);
     vertical-align: top;
-    text-align: left;
     overflow-wrap: anywhere;
-    border-bottom: 1px solid var(--border);
   }
 
   thead th {
-    padding-block: var(--space-3);
     background: var(--faint);
-    color: var(--muted-foreground);
-    font-weight: var(--font-medium);
     white-space: nowrap;
   }
 
@@ -305,33 +227,12 @@ body.index {
     color: var(--foreground);
   }
 
-  tbody tr:last-child > * {
-    border-bottom: 0;
-  }
-
-  tbody tr:hover,
   tbody tr:focus-within {
-    background: var(--faint);
+    background: rgb(from var(--muted) r g b / .5);
   }
 
-  .package-details {
+  tbody th {
     font-weight: var(--font-normal);
-  }
-
-  .package-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-2);
-  }
-
-  .package-name {
-    font-size: var(--text-5);
-    font-weight: var(--font-semibold);
-  }
-
-  .excerpt {
-    line-height: 1.5;
   }
 
   .slug code {
@@ -344,37 +245,13 @@ body.index {
     font-size: var(--text-8);
   }
 
-  td.col-version,
-  td.col-maintainer {
-    font-size: var(--text-7);
-  }
-
   .col-version > span,
   .maintainer-name {
     display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
-  .maintainers {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-1);
-
-    a {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-1);
-      max-width: 100%;
-    }
-
-    .icon {
-      flex: none;
-    }
-  }
-
+  .col-packages,
+  .col-maintainers,
   .col-updated {
     text-align: right;
     white-space: nowrap;
@@ -386,46 +263,8 @@ body.index {
   }
 }
 
-.slug, .excerpt {
+.slug, .excerpt, .repo-links {
   margin: var(--space-1) 0 0;
-}
-
-.excerpt {
-  font-size: var(--text-7);
-}
-
-.repo-info dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-3);
-  margin: var(--space-3) 0;
-  font-size: var(--text-7);
-
-  dt {
-    color: var(--muted-foreground);
-  }
-}
-
-.button[data-variant="secondary"] {
-  border: 1px solid var(--border);
-}
-
-footer {
-  margin-top: var(--space-3);
-  font-size: var(--text-8);
-  gap: var(--space-2);
-}
-
-aside {
-  font-size: var(--text-7);
-
-  h4 {
-    margin: 0;
-  }
-
-  li {
-    margin-bottom: var(--space-1);
-  }
 }
 
 code {
@@ -458,23 +297,12 @@ code {
 
     .package-link-url {
       min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .icon {
-      flex: none;
     }
   }
 
   .package-install {
     min-width: 0;
     font-size: var(--text-7);
-
-    h4 {
-      margin: 0 0 var(--space-3);
-    }
 
     pre {
       margin: 0;
@@ -496,24 +324,8 @@ code {
   }
 
   th {
-    width: 10rem;
-    color: var(--muted-foreground);
     font-weight: var(--font-normal);
     vertical-align: top;
-  }
-
-  .package-maintainers {
-    align-items: flex-start;
-
-    a {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-1);
-    }
-
-    .icon {
-      flex: none;
-    }
   }
 
   .tags {
@@ -524,22 +336,34 @@ code {
   }
 }
 
-.links a {
-  display: block;
+/* Shared maintainer links: keep long names inside their column. */
+.maintainers {
+  align-items: flex-start;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    max-width: 100%;
+  }
 }
 
-/* Footer */
-.footer {
-  margin: var(--space-16) 0 var(--space-8);
-  font-size: var(--text-8);
+.maintainers .icon,
+.package-actions .icon {
+  flex: none;
+}
+
+.license-badge,
+.col-version > span,
+.maintainer-name,
+.package-link-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media screen and (max-width: 768px) {
   .search-bar select {
     max-width: 40%;
-  }
-
-  aside {
-    margin-top: var(--space-8);
   }
 }

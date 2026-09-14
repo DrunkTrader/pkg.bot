@@ -31,20 +31,13 @@
   {% else %}
     <div class="packages-wrap card" role="region" aria-labelledby="results-summary" tabindex="0">
       <table class="packages" aria-labelledby="results-summary">
-        <colgroup>
-          <col class="col-version" />
-          <col class="col-package" />
-          <col class="col-license" />
-          <col class="col-maintainer" />
-          <col class="col-updated" />
-        </colgroup>
         <thead>
           <tr>
-            <th scope="col" class="col-version">Version</th>
-            <th scope="col" class="col-package">Package</th>
-            <th scope="col" class="col-license">License</th>
-            <th scope="col" class="col-maintainer">Maintainer(s)</th>
-            <th scope="col" class="col-updated">Updated</th>
+            <th scope="col" width="10%" class="col-version">Version</th>
+            <th scope="col" width="40%" class="col-package">Package</th>
+            <th scope="col" width="17%" class="col-license">License</th>
+            <th scope="col" width="23%" class="col-maintainer">Maintainer(s)</th>
+            <th scope="col" width="10%" class="col-updated">Updated</th>
           </tr>
         </thead>
         <tbody>
@@ -54,8 +47,8 @@
               {% if p.version %}<span class="package-version" title="{{ p.version }}">{{ p.version }}</span>{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
               <span class="status">{{ p.status }}</span>
             </td>
-            <th scope="row" class="col-package package-details">
-              <div class="package-heading">
+            <th scope="row" class="col-package">
+              <div class="package-heading hstack gap-2">
                 <a class="package-name" href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a>
                 {% if package_urls[p.slug] is defined %}<a class="text-light" href="{{ package_urls[p.slug] }}" rel="noreferrer noopener" aria-label="View {{ p.name }} on {{ repo.name }}" title="View on {{ repo.name }}"><span class="icon icon-external-link" aria-hidden="true"></span></a>{% endif %}
               </div>
@@ -78,7 +71,7 @@
             <td class="col-license package-filters">
               <div class="hstack">
                 {%- if p.is_nonfree %}
-                <a class="badge non-free" href="{{ add_url.is_nonfree | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
+                <a class="badge" data-variant="danger" href="{{ add_url.is_nonfree | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
                 {%- endif %}
                 {%- for l in p.licenses %}
                 <a class="badge outline license-badge" href="{{ add_url.license | safe }}license={{ l | urlencode }}" title="Filter by license: {{ l }}">{{ l }}</a>
@@ -87,7 +80,7 @@
               </div>
             </td>
             <td class="package-filters col-maintainer">
-              <div class="maintainers">
+              <div class="maintainers vstack gap-1">
               {%- for m in p.maintainers | slice(end=2) %}
                 <a href="{{ add_url.maintainer | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer"><span class="icon icon-avatar" aria-hidden="true"></span><span class="maintainer-name">{{ m.name | default(value=m.handle) }}</span></a>
               {%- else %}<span class="text-light" aria-label="Maintainer unavailable">—</span>

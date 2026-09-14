@@ -35,7 +35,7 @@
       <table aria-label="Package details">
         <tbody>
           <tr>
-            <th>Version</th>
+            <th width="160">Version</th>
             <td class="hstack">
               {% if pkg.version %}{{ pkg.version }}{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
               <span class="status">{{ pkg.status }}</span>
@@ -80,7 +80,7 @@
               {%- for l in pkg.licenses %}
               <a class="badge outline license-badge" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="{{ l }}">{{ l }}</a>
               {%- endfor %}
-              {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge non-free">Non-free</span>{% endif %}
+              {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge" data-variant="danger">Non-free</span>{% endif %}
             </td>
           </tr>
           {% endif %}
@@ -99,7 +99,7 @@
           <tr>
             <th>Maintainers</th>
             <td>
-              <div class="vstack gap-1 package-maintainers">
+              <div class="vstack gap-1 maintainers">
                 {%- for m in pkg.maintainers %}
                 <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}"><span class="icon icon-avatar" aria-hidden="true"></span><span>{{ m.name | default(value=m.handle) }}</span></a>
                 {%- endfor %}

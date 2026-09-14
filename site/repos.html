@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Repositories &mdash; pkgs{% endblock %}
+{% block title %}Linux package repositories &ndash; pkgs{% endblock %}
 {% block description %}All {{ repo_list | length }} Linux packages across many distro repositories{% endblock %}
 {% block feed_title %}Repositories — pkgbot{% endblock %}
 
@@ -21,14 +21,14 @@
   </div>
 
   <div class="packages-wrap card" role="region" aria-labelledby="repos-summary" tabindex="0">
-    <table class="packages repos-table" aria-labelledby="repos-summary">
+    <table class="packages" aria-labelledby="repos-summary">
       <colgroup>
-        <col class="col-repo" />
-        <col class="col-distro" />
-        <col class="col-manager" />
-        <col class="col-packages" />
-        <col class="col-maintainers" />
-        <col class="col-updated" />
+        <col width="34%" />
+        <col width="16%" />
+        <col width="12%" />
+        <col width="13%" />
+        <col width="13%" />
+        <col width="12%" />
       </colgroup>
       <thead>
         <tr>
@@ -43,21 +43,21 @@
       <tbody>
         {%- for r in repo_list %}
         <tr>
-          <th scope="row" class="col-repo repo-details">
-            <div class="repo-heading">
+          <th scope="row" class="col-repo">
+            <div class="repo-heading hstack gap-2">
               {% set repo = r %}
               {% set repo_name_class = "repo-name" %}
               {% include "repo-name.html" %}
               {%- if r.branch %}<span class="badge outline">{{ r.branch }}</span>{% endif %}
             </div>
-            <p class="repo-links">
+            <p class="repo-links hstack">
               {{ r.slug }}
               {%- if r.homepage_url %}<a href="{{ r.homepage_url }}" rel="noreferrer noopener" title="Homepage"><span class="icon icon-external-link" aria-hidden="true"></span></a>{% endif %}
             </p>
           </th>
           <td class="col-distro">
             {%- if r.distro %}<a href="{{ add_url.distro | safe }}distro={{ r.distro | urlencode }}" title="Filter by distro">{{ r.distro }}</a>{% else %}&mdash;{% endif %}
-            {%- if r.family != r.distro %}<div><a class="repo-family text-light" href="{{ add_url.family | safe }}family={{ r.family | urlencode }}" title="Filter by family">{{ r.family }}</a></div>{% endif %}
+            {%- if r.family != r.distro %}<div><a class="text-light" href="{{ add_url.family | safe }}family={{ r.family | urlencode }}" title="Filter by family">{{ r.family }}</a></div>{% endif %}
           </td>
           <td class="col-manager"><a href="{{ add_url.manager | safe }}manager={{ r.manager | urlencode }}" title="Filter by package manager">{{ r.manager }}</a></td>
           <td class="col-packages">
