@@ -32,6 +32,7 @@ thead th {
   &.icon-external-link { --icon: url("/static/external-link.svg"); }
   &.icon-code { --icon: url("/static/code.svg"); }
   &.icon-package { --icon: url("/static/package.svg"); }
+  &.icon-github { --icon: url("/static/github.svg"); }
 }
 
 
@@ -57,6 +58,24 @@ thead th {
 
 .logo img {
   max-height: 3.5rem;
+}
+
+/* Footer */
+#footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  margin: var(--space-8) 0;
+  color: var(--muted-foreground);
+  font-size: var(--text-7);
+
+  a:has(.icon) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
 }
 
 /* Search form */

@@ -1,0 +1,22 @@
+{% extends "partials/base.html" %}
+
+{% block title %}About - pkg.bot{% endblock %}
+
+{% block content %}
+<section class="content page about">
+  <h1>About</h1>
+  <p>pkg.bot is a fast search engine for Linux packages across distributions and package repositories.
+     It uses the package data dump from <a href="https://repology.org">Repology</a>.
+  </p>
+  
+  <p>
+    In early September 2026, <a href="https://nadh.in">I</a> had just switched to NixOS. In the process of
+    setting it up, I was frequently searching for packages on the official package site, but was quite
+    annoyed by its clunky UX. No way to sort by date or versions, no "permalink" to share a package's page even.
+  </p>
+  <p>
+    I remembered that pretty much most distros have clunky, annoying package sites. So I built this.
+    Any queries or contributions, please raise at <a href="https://github.com/knadh/pkg.bot">@knadh/pkg.bot</a>.
+  </p>
+</section>
+{% endblock %}

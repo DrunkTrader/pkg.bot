@@ -1,7 +1,7 @@
 use sqlx::sqlite::SqlitePool;
 
 use crate::models::{
-    get_comparator, comparisons, normalize_version, Cursor, Listing, Package, PackageQuery, Repo,
+    comparisons, get_comparator, normalize_version, Cursor, Listing, Package, PackageQuery, Repo,
     RepoQuery, Sort, BY_FACET, BY_NAME, Q, SEARCH_PACKAGES,
 };
 

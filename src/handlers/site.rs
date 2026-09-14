@@ -26,6 +26,23 @@ pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
     render(&ctx, "index.html", &mut tpl_ctx)
 }
 
+/// Render custom HTML pages from the site's pages directory.
+pub async fn render_custom_page(State(ctx): State<Arc<Ctx>>, Path(page): Path<String>) -> Response {
+    let template = format!("pages/{}.html", page);
+    let Some(site) = &ctx.site else {
+        return (StatusCode::NOT_FOUND, "not found").into_response();
+    };
+    if page.contains(['/', '\\']) || site.tpl.get_template(&template).is_err() {
+        return not_found(&ctx, "Page does not exist.");
+    }
+
+    let mut tpl_ctx = base_context(&ctx);
+    tpl_ctx.insert("page_type", "page");
+    tpl_ctx.insert("page_id", &page);
+
+    render(&ctx, &template, &mut tpl_ctx)
+}
+
 /// Repository directory.
 pub async fn render_repos(
     State(ctx): State<Arc<Ctx>>,
