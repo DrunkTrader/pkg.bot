@@ -132,8 +132,6 @@
         {% if pkg.meta.family is defined %}
         <tr><th>Family</th><td>{{ pkg.meta.family }}</td></tr>
         {% endif %}
-        {% if pkg.download_bytes %}<tr><th>Download size</th><td>{{ pkg.download_bytes | bytes }}</td></tr>{% endif %}
-        {% if pkg.installed_bytes %}<tr><th>Installed size</th><td>{{ pkg.installed_bytes | bytes }}</td></tr>{% endif %}
         <tr><th>First seen</th><td>{{ pkg.created_at | truncate(length=10, end="") }}</td></tr>
         <tr><th>Last changed</th><td>{{ pkg.updated_at | truncate(length=10, end="") }}</td></tr>
         {%- for key, val in pkg.meta %}

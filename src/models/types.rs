@@ -371,8 +371,6 @@ pub struct Package {
     pub keywords: StringArray,
 
     pub status: PackageStatus,
-    pub download_bytes: Option<i64>,
-    pub installed_bytes: Option<i64>,
     pub score: f64,
 
     pub meta: JsonString,

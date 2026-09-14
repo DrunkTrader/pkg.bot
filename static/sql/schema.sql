@@ -80,8 +80,6 @@ CREATE TABLE IF NOT EXISTS packages (
     body_tokens       TEXT,
 
     status            TEXT    NOT NULL DEFAULT 'unprocessed' CHECK (status IN ('unprocessed', 'newest', 'outdated', 'ignored', 'unique', 'devel', 'legacy', 'incorrect', 'untrusted', 'noscheme', 'rolling')),
-    download_bytes    INTEGER,
-    installed_bytes   INTEGER,
     score             REAL    NOT NULL DEFAULT 0,
 
     meta              TEXT    NOT NULL DEFAULT '{}' CHECK (json_valid(meta)),

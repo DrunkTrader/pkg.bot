@@ -51,7 +51,6 @@
             <td class="col-version">
               {% if p.version %}<span class="package-version" title="{{ p.version }}">{{ p.version }}</span>{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
               <span class="status">{{ p.status }}</span>
-              {% if p.installed_bytes %}<span class="package-size text-light">{{ p.installed_bytes | bytes }} installed</span>{% endif %}
             </td>
             <th scope="row" class="col-package package-details">
               <div class="package-heading">

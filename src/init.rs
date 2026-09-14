@@ -130,14 +130,6 @@ fn register_filters(tera: &mut tera::Tera) {
             Ok(tera::Value::String(num(v.as_i64().unwrap_or(0))))
         },
     );
-
-    // {{ 1258291 | bytes }} => 1.2 MB
-    tera.register_filter(
-        "bytes",
-        |v: &tera::Value, _: &std::collections::HashMap<String, tera::Value>| {
-            Ok(tera::Value::String(bytes(v.as_i64().unwrap_or(0))))
-        },
-    );
 }
 
 /// Format a number with thousands separators. Eg: 1234567 => 1,234,567
@@ -156,22 +148,4 @@ fn num(n: i64) -> String {
     }
 
     out
-}
-
-/// Format a byte count in human readable form. Eg: 1258291 => 1.2 MB
-fn bytes(n: i64) -> String {
-    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
-
-    let mut val = n as f64;
-    let mut unit = 0;
-    while val >= 1024.0 && unit < UNITS.len() - 1 {
-        val /= 1024.0;
-        unit += 1;
-    }
-
-    if unit == 0 {
-        format!("{} {}", n, UNITS[unit])
-    } else {
-        format!("{:.1} {}", val, UNITS[unit])
-    }
 }
