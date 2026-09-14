@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "partials/base.html" %}
 
 {% block title %}{% if term %}{{ term }} &middot; {% endif %}{{ repo.name }} packages &mdash; pkg.bot{% endblock %}
 {% block description %}{% if term %}Packages matching &quot;{{ term }}&quot; in {{ repo.name }}.{% else %}{{ results.total }}{% if results.total_capped %}+{% endif %} package{{ results.total | pluralize }}{% if term %} matching &quot;{{ term }}&quot;{% endif %} in {{ repo.name }}.{% endif %}{% endblock %}
@@ -13,14 +13,14 @@
       <div id="results-summary" class="summary text-light">
         {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
         {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
-        {% include "repo-name.html" %}
+        {% include "partials/repo-name.html" %}
         {% if render_time %}<span aria-label="Rendered in {{ render_time }}">&mdash; {{ render_time }}</span>{% endif %}
       </div>
 
-      {% include "current-filters.html" %}
+      {% include "partials/current-filters.html" %}
     </div>
 
-    {% include "feed-link.html" %}
+    {% include "partials/feed-link.html" %}
   </div>
 
   {% if results.packages | length == 0 %}
@@ -96,7 +96,7 @@
       </table>
     </div>
 
-    {% include "pagination.html" %}
+    {% include "partials/pagination.html" %}
   {% endif %}
 </section><!-- results -->
 {% endblock %}

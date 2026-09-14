@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "partials/base.html" %}
 
 {% block title %}{{ pkg.name }} {{ pkg.version }} &middot; {{ repo.name }} &mdash; pkgs{% endblock %}
 {% block description %}{{ pkg.excerpt | default(value=pkg.name) }} &mdash; {{ pkg.name }} {{ pkg.version }} in {{ repo.name }}.{% endblock %}
@@ -13,7 +13,7 @@
       <li><a href="{{ consts.root_url | safe }}/" class="unstyled">Home</a></li>
       <li aria-hidden="true">/</li>
       {% set repo_name_class = "unstyled" %}
-      <li>{% include "repo-name.html" %}</li>
+      <li>{% include "partials/repo-name.html" %}</li>
       <li aria-hidden="true">/</li>
       <li aria-current="page">{{ pkg.name }}</li>
     </ol>
@@ -144,7 +144,7 @@
         {% if pkg.homepage_url %}<a class="button" data-variant="secondary" href="{{ pkg.homepage_url }}" title="{{ pkg.homepage_url }}" rel="noreferrer noopener"><span class="icon icon-globe" aria-hidden="true"></span><span class="package-link-url">{{ pkg.homepage_url | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_end_matches(pat="/") }}</span></a>{% endif %}
         {% if source_url is defined %}<a class="button" data-variant="secondary" href="{{ source_url }}" title="{{ source_url }}" rel="noreferrer noopener"><span class="icon icon-code" aria-hidden="true"></span><span class="package-link-url">{{ source_url | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_end_matches(pat="/") }}</span></a>{% endif %}
       </nav>
-      {% include "package-install.html" %}
+      {% include "partials/package-install.html" %}
     </div>
   </div>
 </article>

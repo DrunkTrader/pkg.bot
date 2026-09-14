@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "partials/base.html" %}
 
 {% block title %}Linux package repos &ndash; pkg.bot{% endblock %}
 {% block description %}All {{ repo_list | length }} Linux packages across many distro repositories{% endblock %}
@@ -14,10 +14,10 @@
         <strong>{{ total_packages | num }}</strong> packages
       </p>
 
-      {% include "current-filters.html" %}
+      {% include "partials/current-filters.html" %}
     </div>
 
-    {% include "feed-link.html" %}
+    {% include "partials/feed-link.html" %}
   </div>
 
   <div class="packages-wrap card" role="region" aria-labelledby="repos-summary" tabindex="0">
@@ -47,7 +47,7 @@
             <div class="repo-heading hstack gap-2">
               {% set repo = r %}
               {% set repo_name_class = "repo-name" %}
-              {% include "repo-name.html" %}
+              {% include "partials/repo-name.html" %}
               {%- if r.branch %}<span class="badge outline">{{ r.branch }}</span>{% endif %}
             </div>
             <p class="repo-links hstack">
