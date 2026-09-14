@@ -271,7 +271,7 @@ pub async fn get_package(
         name: &pkg.name,
         pkg_base: pkg.pkg_base.as_deref(),
         version: pkg.version.as_deref(),
-        subrepo: meta["subrepo"].as_str(),
+        subrepo: pkg.subrepo.as_deref(),
         arch: meta["arch"].as_str(),
     };
 

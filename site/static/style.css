@@ -426,11 +426,22 @@ aside {
     font-size: var(--text-5);
   }
 
+  table {
+    font-size: var(--text-regular);
+  }
+
   th {
     width: 10rem;
     color: var(--muted-foreground);
     font-weight: var(--font-normal);
     vertical-align: top;
+  }
+
+  .tags {
+    font-size: var(--text-7);
+    a {
+      color: var(--muted-foreground);
+    }
   }
 }
 

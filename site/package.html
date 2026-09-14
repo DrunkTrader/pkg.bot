@@ -31,14 +31,14 @@
 
     {% if pkg.description and pkg.description != pkg.excerpt %}<p>{{ pkg.description }}</p>{% endif %}
 
-    <div class="table mt-6">
+    <div class="card table mt-6">
       <table>
         <tbody>
           <tr>
             <th>Repository</th>
             <td><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">{{ repo.name }}</a> ({{ repo.manager }})</td>
           </tr>
-          {% if pkg.pkg_base %}<tr><th>Source package</th><td><code>{{ pkg.pkg_base }}</code></td></tr>{% endif %}
+          {% if pkg.pkg_base %}<tr><th>Source package</th><td>{{ pkg.pkg_base }}</td></tr>{% endif %}
           {% if pkg.licenses | length > 0 %}
           <tr>
             <th>Licenses</th>
@@ -64,9 +64,9 @@
           {% if pkg.keywords | length > 0 %}
           <tr>
             <th>Tags</th>
-            <td class="hstack">
+            <td class="hstack tags">
               {%- for k in pkg.keywords %}
-              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}tag={{ k | urlencode }}">{{ k }}</a>
+              <a href="{{ filter_url | safe }}tag={{ k | urlencode }}">#{{ k }}</a>
               {%- endfor %}
             </td>
           </tr>

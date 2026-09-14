@@ -83,8 +83,11 @@ struct Package {
     slug: String,
     name: String,
     name_norm: String,
+    project_name: String,
+    binary_names: String,
     excerpt: Option<String>,
     pkg_base: Option<String>,
+    subrepo: Option<String>,
     version: String,
     version_norm: Option<String>,
     homepage_url: Option<String>,
@@ -433,8 +436,8 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
 
     for chunk in rows.chunks(CHUNK) {
         let mut q = QueryBuilder::<Sqlite>::new(
-            "INSERT INTO packages (id, repo_id, slug, name, name_norm, excerpt, pkg_base, \
-             version, version_norm, homepage_url, licenses, is_nonfree, platforms, \
+            "INSERT INTO packages (id, repo_id, slug, name, name_norm, excerpt, pkg_base, subrepo, \
+             version, project_name, binary_names, version_norm, homepage_url, licenses, is_nonfree, platforms, \
              \"groups\", keywords, status, meta, identity_tokens, keyword_tokens, body_tokens, \
              created_at, updated_at) ",
         );
@@ -446,7 +449,10 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
                 .push_bind(p.name_norm.as_str())
                 .push_bind(p.excerpt.as_deref())
                 .push_bind(p.pkg_base.as_deref())
+                .push_bind(p.subrepo.as_deref())
                 .push_bind(p.version.as_str())
+                .push_bind(p.project_name.as_str())
+                .push_bind(p.binary_names.as_str())
                 .push_bind(p.version_norm.as_deref())
                 .push_bind(p.homepage_url.as_deref())
                 .push_bind(p.licenses.as_str())
@@ -500,9 +506,11 @@ fn transform_package(
     let groups: Vec<String> = p.category.into_iter().collect();
 
     // binnames is the actual installable package name.
-    let keywords: Vec<String> = uniq(p.binnames)
-        .into_iter()
-        .filter(|k| *k != name)
+    let binary_names = uniq(p.binnames);
+    let keywords: Vec<&str> = binary_names
+        .iter()
+        .filter(|k| **k != name)
+        .map(String::as_str)
         .collect();
 
     let mut ids = Vec::new();
@@ -518,13 +526,10 @@ fn transform_package(
         "id": p.id,
         "family": p.family,
         "trackname": p.trackname,
-        "effname": p.effname,
         "versionclass": p.versionclass,
         "flags": p.flags,
         "shadow": p.shadow,
         "subrepos": subrepos,
-        // Some repos use this in their package URL templates.
-        "subrepo": p.subrepo,
         "arch": p.arch,
     })
     .to_string();
@@ -542,6 +547,9 @@ fn transform_package(
         name_norm,
         excerpt: p.comment,
         pkg_base: if p.family == "nix" { None } else { p.srcname },
+        subrepo: p.subrepo,
+        project_name: p.effname,
+        binary_names: json!(binary_names).to_string(),
         version: p.rawversion,
         version_norm: normalize_version(&p.version),
         homepage_url: p.homepage_url,

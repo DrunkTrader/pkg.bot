@@ -50,12 +50,15 @@ CREATE TABLE IF NOT EXISTS packages (
     slug              TEXT    NOT NULL,           -- unique string slug that the repo uses. eg: nix (something.name), pacman (pkg), aur (name) etc.
     name              TEXT    NOT NULL,
     name_norm         TEXT    NOT NULL,           -- normalized name for cross-repo search. eg: 'foo-bar' -> 'foobar', 'FooBar' -> 'foobar'
+    project_name      TEXT,                       -- cross-repository project name (`effname`)
+    binary_names      TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(binary_names)), -- installable package names
     excerpt           TEXT,
     description       TEXT,
 
     -- Source/base package that several binary packages are built from.
     -- eg: pacman -> pkgbase, aur -> PackageBase, deb -> Source. NULL for nix.
     pkg_base          TEXT,
+    subrepo           TEXT,                       -- repository component of the selected version, eg: extra, bookworm/main
 
     version           TEXT,                       -- eg: 5.0.1, 125.0, 1.2.1-1, unstable-2024-01-05 etc.
     version_norm      TEXT,                       -- 0 padded semver form for lexicographic search, eg: 2.1.1 = 00002.00001.00001

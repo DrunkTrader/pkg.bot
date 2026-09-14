@@ -325,6 +325,9 @@ pub struct Package {
     pub excerpt: Option<String>,
     pub description: Option<String>,
     pub pkg_base: Option<String>,
+    pub subrepo: Option<String>,
+    pub project_name: Option<String>,
+    pub binary_names: StringArray,
 
     pub version: Option<String>,
     pub version_norm: Option<String>,
