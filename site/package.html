@@ -47,8 +47,8 @@
               <th>Project name</th>
               <td>{% if pkg.project_name is defined and pkg.project_name %}{{ pkg.project_name }}{% else %}<span class="text-light" aria-label="Project name unavailable">&mdash;</span>{% endif %}</td>
             </tr>
-            {% if pkg.meta.trackname is defined %}
-            <tr><th>Track name</th><td>{{ pkg.meta.trackname }}</td></tr>
+            {% if pkg.package is defined %}
+            <tr><th>Package</th><td>{{ pkg.package }}</td></tr>
             {% endif %}
             <tr>
               <th>Binary names</th>
@@ -138,7 +138,7 @@
         <tr><th>First seen</th><td>{{ pkg.created_at | truncate(length=10, end="") }}</td></tr>
         <tr><th>Last changed</th><td>{{ pkg.updated_at | truncate(length=10, end="") }}</td></tr>
         {%- for key, val in pkg.meta %}
-        {% if key != "id" and key != "shadow" and key != "subrepos" and key != "arch" and key != "versionclass" and key != "flags" and key != "trackname" and key != "family" %}
+        {% if key != "id" and key != "shadow" and key != "subrepos" and key != "arch" and key != "versionclass" and key != "flags" and key != "package" and key != "family" %}
         <tr><th>{{ key | replace(from="_", to=" ") | capitalize }}</th><td>{{ val }}</td></tr>
         {% endif %}
         {%- endfor %}

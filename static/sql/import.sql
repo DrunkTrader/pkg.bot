@@ -23,7 +23,11 @@ SELECT id::BIGINT                       AS id,
        num_maintainers,
        CASE WHEN metadata->>'color' IS NULL THEN NULL
             ELSE '#' || (metadata->>'color') END AS brand_color,
-       COALESCE(metadata->'repolinks', '[]'::JSONB)::TEXT AS repolinks,
+       COALESCE((SELECT JSONB_AGG(link ORDER BY ord)
+           FROM JSONB_ARRAY_ELEMENTS(COALESCE(metadata->'repolinks', '[]'::JSONB))
+                WITH ORDINALITY AS l(link, ord)
+           WHERE link->>'url' IS DISTINCT FROM metadata->'repolinks'->0->>'url'),
+           '[]'::JSONB)::TEXT AS links,
        TO_CHAR(first_seen AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at,
        (SELECT pl->>'url'
           FROM JSONB_ARRAY_ELEMENTS(COALESCE(metadata->'packagelinks', '[]'::JSONB)) pl
@@ -53,12 +57,10 @@ SELECT maintainer FROM repology.maintainers WHERE num_packages > 0 AND maintaine
 -- $1: repology repository names to import.
 DECLARE import_packages NO SCROLL CURSOR FOR
 WITH ranked AS (
-    SELECT id::BIGINT AS id, repo, family, srcname, binnames, trackname, visiblename,
+    SELECT id::BIGINT AS id, repo, srcname, binnames, trackname, visiblename,
            rawversion, version, maintainers, category, comment, licenses, effname, links,
            COALESCE(versionclass, 0)::INT AS versionclass,
-           shadow,
-           -- These are used by package url templates, eg: https://site.com/{subrepo}/{arch}/{name} etc.
-           subrepo, arch,
+           subrepo,
            -- archs and subrepos only differ by build, so collect them across the group.
            ARRAY_AGG(arch) FILTER (WHERE arch IS NOT NULL) OVER w AS platforms,
            ARRAY_AGG(subrepo) FILTER (WHERE subrepo IS NOT NULL) OVER w AS subrepos,
@@ -71,10 +73,10 @@ WITH ranked AS (
     WHERE repo = ANY($1)
     WINDOW w AS (PARTITION BY repo, trackname)
 )
-SELECT p.id, p.repo, p.family, p.srcname, p.binnames, p.trackname, p.visiblename,
+SELECT p.repo, p.trackname AS package, p.subrepos, p.srcname, p.binnames, p.visiblename,
        p.rawversion, p.version, p.maintainers, p.category, p.comment, p.licenses,
-       p.effname, p.versionclass, p.shadow, p.platforms, p.subrepos,
-       p.subrepo, p.arch,
+       p.effname, p.versionclass, p.platforms, p.subrepo,
+       JSONB_BUILD_OBJECT('id', p.id) AS meta,
        -- Links are [kind, link_id] pairs. Only need to get project homepage (kind=0)
        -- as the rest of the urls (package permalink, repo) are in repos.metadata->'packagelinks.
        (SELECT k.url

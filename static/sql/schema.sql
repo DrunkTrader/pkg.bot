@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS repos (
     pkg_url_template    TEXT,                     -- package landing page template, eg: https://site.com/{name}
     source_url_template TEXT,                     -- package recipe/sources template (PKGBUILD, .spec, ebuild ...), eg: https://site.com/{pkg_base}/src
 
-    meta              TEXT    NOT NULL DEFAULT '{}' CHECK (json_valid(meta)), -- repolinks[] etc.
+    links             TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(links)), -- additional repository links, preserving upstream labels/types
+    meta              TEXT    NOT NULL DEFAULT '{}' CHECK (json_valid(meta)),
 
     brand_color       TEXT,
 
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS packages (
     repo_id           INTEGER NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
     slug              TEXT    NOT NULL,           -- unique string slug that the repo uses. eg: nix (something.name), pacman (pkg), aur (name) etc.
     name              TEXT    NOT NULL,
+    package           TEXT    NOT NULL,           -- canonical upstream identifier, before slug escaping
     name_norm         TEXT    NOT NULL,           -- normalized name for cross-repo search. eg: 'foo-bar' -> 'foobar', 'FooBar' -> 'foobar'
     project_name      TEXT,                       -- cross-repository project name (`effname`)
     binary_names      TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(binary_names)), -- installable package names

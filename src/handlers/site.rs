@@ -264,15 +264,14 @@ pub async fn get_package(
     tpl_ctx.insert("repo", repo);
 
     // The package's pages on the repo's own website.
-    let meta: serde_json::Value = serde_json::from_str(&pkg.meta.0).unwrap_or_default();
     let fields = url_template::Fields {
         slug: &pkg.slug,
-        trackname: meta["trackname"].as_str(),
+        package: Some(pkg.package.as_str()),
         name: &pkg.name,
         pkg_base: pkg.pkg_base.as_deref(),
         version: pkg.version.as_deref(),
         subrepo: pkg.subrepo.as_deref(),
-        arch: meta["arch"].as_str(),
+        arch: None,
     };
 
     for (key, tpl) in [

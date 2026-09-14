@@ -1,4 +1,4 @@
-{%- set install_name = pkg.meta.trackname | default(value=pkg.name) -%}
+{%- set install_name = pkg.package | default(value=pkg.name) -%}
 {%- if not install_name -%}
   {%- set install_name = pkg.name -%}
 {%- endif -%}
@@ -33,7 +33,7 @@
   {%- elif repo.manager == "mageia" %}
     <pre><code>urpmi {{ install_name -}}</code></pre>
   {%- elif repo.manager == "openwrt" %}
-    {# OpenWrt track names are source paths; use an emitted binary package name. #}
+    {# OpenWrt package identifiers are source paths; use an emitted binary package name. #}
     {%- set openwrt_name = pkg.name %}
     {%- if pkg.binary_names is defined and pkg.binary_names | length > 0 %}
       {%- set openwrt_name = pkg.binary_names | first %}

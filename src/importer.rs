@@ -38,7 +38,7 @@ struct SrcRepo {
     name: String,
     family: String,
     homepage_url: Option<String>,
-    repolinks: Option<String>,
+    links: String,
     pkg_url_template: Option<String>,
     source_url_template: Option<String>,
     num_packages: i32,
@@ -50,12 +50,11 @@ struct SrcRepo {
 /// Repology package.
 #[derive(sqlx::FromRow)]
 struct SrcPackage {
-    id: i64,
     repo: String,
-    family: String,
+    package: String,
+    subrepos: Option<Vec<String>>,
     srcname: Option<String>,
     binnames: Option<Vec<String>>,
-    trackname: String,
     visiblename: String,
     rawversion: String,
     version: String,
@@ -65,20 +64,25 @@ struct SrcPackage {
     licenses: Option<Vec<String>>,
     effname: String,
     versionclass: i32,
-    shadow: bool,
     platforms: Option<Vec<String>>,
-    subrepos: Option<Vec<String>>,
     subrepo: Option<String>,
-    arch: Option<String>,
+    meta: sqlx::types::Json<SrcPackageMeta>,
     homepage_url: Option<String>,
     created_at: Option<String>,
     updated_at: Option<String>,
+}
+
+/// Repology fields retained in package metadata.
+#[derive(serde::Deserialize, serde::Serialize)]
+struct SrcPackageMeta {
+    id: i64,
 }
 
 /// SQLite package.
 struct Package {
     id: i64,
     repo_id: i64,
+    package: String,
     slug: String,
     name: String,
     name_norm: String,
@@ -233,7 +237,7 @@ async fn import_repos(
     pg: &mut PgConnection,
     db: &mut SqliteConnection,
     conf: &ImportConfig,
-) -> Result<HashMap<String, i64>> {
+) -> Result<HashMap<String, SrcRepo>> {
     let src: Vec<SrcRepo> = sqlx::query_as(&IMPORT.pg_get_repos.query)
         .bind(&conf.families)
         .bind(conf.min_packages)
@@ -262,13 +266,9 @@ async fn import_repos(
             untemplated.push(r.slug.as_str());
         }
 
-        let repolinks: serde_json::Value =
-            serde_json::from_str(r.repolinks.as_deref().unwrap_or("[]"))
-                .unwrap_or_else(|_| json!([]));
-
         sqlx::query(
             "INSERT INTO repos (id, slug, name, family, manager, distro, homepage_url, \
-             pkg_url_template, source_url_template, meta, brand_color, num_packages, \
+             pkg_url_template, source_url_template, links, brand_color, num_packages, \
              num_maintainers, created_at) \
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
@@ -281,7 +281,7 @@ async fn import_repos(
         .bind(&r.homepage_url)
         .bind(&pkg_url)
         .bind(&source_url)
-        .bind(json!({ "repolinks": repolinks }).to_string())
+        .bind(&r.links)
         .bind(&r.brand_color)
         .bind(r.num_packages)
         .bind(r.num_maintainers)
@@ -300,7 +300,7 @@ async fn import_repos(
     }
 
     log::info!("imported {} repos", src.len());
-    Ok(src.into_iter().map(|r| (r.slug, r.id)).collect())
+    Ok(src.into_iter().map(|r| (r.slug.clone(), r)).collect())
 }
 
 /// Import maintainers from the Postgres db.
@@ -362,7 +362,7 @@ async fn import_maintainers(
 async fn import_packages(
     mut pg: PgConnection,
     db: &mut SqliteConnection,
-    repos: &HashMap<String, i64>,
+    repos: &HashMap<String, SrcRepo>,
     maintainers: &HashMap<String, i64>,
 ) -> Result<usize> {
     let names: Vec<&String> = repos.keys().collect();
@@ -438,7 +438,7 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
             "INSERT INTO packages (id, repo_id, slug, name, name_norm, excerpt, pkg_base, subrepo, \
              version, project_name, binary_names, version_norm, homepage_url, licenses, is_nonfree, platforms, \
              \"groups\", keywords, status, meta, identity_tokens, keyword_tokens, body_tokens, \
-             created_at, updated_at) ",
+             created_at, updated_at, package) ",
         );
         q.push_values(chunk, |mut b, p| {
             b.push_bind(p.id)
@@ -465,7 +465,8 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
                 .push_bind(p.keyword_tokens.as_deref())
                 .push_bind(p.body_tokens.as_deref())
                 .push_bind(p.created_at.as_deref())
-                .push_bind(p.updated_at.as_deref());
+                .push_bind(p.updated_at.as_deref())
+                .push_bind(p.package.as_str());
         });
         q.build().execute(&mut *tx).await?;
     }
@@ -492,10 +493,10 @@ async fn insert_packages(db: &mut SqliteConnection, rows: &[Package]) -> Result<
 fn transform_package(
     p: SrcPackage,
     id: i64,
-    repos: &HashMap<String, i64>,
+    repos: &HashMap<String, SrcRepo>,
     maintainers: &HashMap<String, i64>,
 ) -> (Package, usize) {
-    let repo_id = repos[&p.repo];
+    let repo = &repos[&p.repo];
     let name = p.visiblename;
     let name_norm = normalize_name(&name);
 
@@ -521,42 +522,37 @@ fn transform_package(
         }
     }
 
-    let meta = json!({
-        "id": p.id,
-        "family": p.family,
-        "trackname": p.trackname,
-        "shadow": p.shadow,
-        "subrepos": subrepos,
-        "arch": p.arch,
-    })
-    .to_string();
-
     let row = Package {
         id,
-        repo_id,
-        // trackname is the canonical id of a package within its repo.
+        repo_id: repo.id,
+        // package is the canonical id of a package within its repo.
         // eg: python314Packages.redis vs redis in nixos.
-        identity_tokens: fts_tokenize(&[&name, &name_norm, &p.trackname, &p.effname]),
+        identity_tokens: fts_tokenize(&[&name, &name_norm, &p.package, &p.effname]),
         keyword_tokens: fts_tokenize(&[&keywords.join(" "), &groups.join(" ")]),
         body_tokens: fts_tokenize(&[p.comment.as_deref().unwrap_or_default()]),
-        slug: make_slug(&p.trackname),
+        slug: make_slug(&p.package),
         name,
         name_norm,
         excerpt: p.comment,
-        pkg_base: if p.family == "nix" { None } else { p.srcname },
+        pkg_base: if repo.family == "nix" {
+            None
+        } else {
+            p.srcname
+        },
         subrepo: p.subrepo,
         project_name: p.effname,
         binary_names: json!(binary_names).to_string(),
         version: p.rawversion,
         version_norm: normalize_version(&p.version),
         homepage_url: p.homepage_url,
-        is_nonfree: is_nonfree(&p.family, &licenses, &subrepos),
+        is_nonfree: is_nonfree(&repo.family, &licenses, &subrepos),
         licenses: json!(licenses).to_string(),
         platforms: json!(platforms).to_string(),
         groups: json!(groups).to_string(),
         keywords: json!(keywords).to_string(),
         status: PackageStatus::from_versionclass(p.versionclass),
-        meta,
+        meta: json!(p.meta.0).to_string(),
+        package: p.package,
         maintainers: ids,
         created_at: p.created_at,
         updated_at: p.updated_at,
@@ -567,17 +563,17 @@ fn transform_package(
 
 /// Sanitize a package name to e URL-safe slug.
 /// eg: freebsd `www/nginx`, nix `emacsPackages."0blayout"` etc.
-fn make_slug(trackname: &str) -> String {
+fn make_slug(package: &str) -> String {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
 
     // Reserve an escape char for the empty name. Escape dot-only path
     // segments so browsers don't strip them away when the slugs are in URIs.
-    if trackname.is_empty() {
+    if package.is_empty() {
         return "~".to_string();
     }
-    let dot_segment = matches!(trackname, "." | "..");
-    let mut out = String::with_capacity(trackname.len());
-    for b in trackname.bytes() {
+    let dot_segment = matches!(package, "." | "..");
+    let mut out = String::with_capacity(package.len());
+    for b in package.bytes() {
         if b.is_ascii_alphanumeric()
             || matches!(b, b'-' | b'_' | b'+' | b'@')
             || (b == b'.' && !dot_segment)
@@ -601,7 +597,7 @@ fn make_nix_pkg_url_template(slug: &str) -> Option<String> {
     };
 
     Some(format!(
-        "https://search.nixos.org/packages?channel={channel}&query={{trackname|quote}}#show={{trackname|quote}}"
+        "https://search.nixos.org/packages?channel={channel}&query={{package|quote}}#show={{package|quote}}"
     ))
 }
 
@@ -633,7 +629,6 @@ fn get_distro<'a>(family: &'a str, slug: &'a str) -> &'a str {
         _ => family,
     }
 }
-
 
 /// Guess if a package is non-free from its licenses and the subrepo names.
 fn is_nonfree(family: &str, licenses: &[String], subrepos: &[String]) -> Option<bool> {
@@ -802,7 +797,13 @@ mod tests {
 
     #[test]
     fn slugs() {
-        for name in ["gtk+", "python314Packages.redis", "node@22", "foo-bar_1", ".foo-"] {
+        for name in [
+            "gtk+",
+            "python314Packages.redis",
+            "node@22",
+            "foo-bar_1",
+            ".foo-",
+        ] {
             assert_eq!(make_slug(name), name);
         }
         for (name, expected) in [
@@ -827,9 +828,8 @@ mod tests {
     #[test]
     fn slug_collisions() {
         let names = [
-            "a-b", "a/b", "a//b", "a:b", "a b", "a\\b", "a~2Fb",
-            "foo", "\"foo\"", "/foo/", "-foo-", ".foo.",
-            "", ".", "..", "猫", "犬", "~", "~2E", "~2E~2E", "%2F",
+            "a-b", "a/b", "a//b", "a:b", "a b", "a\\b", "a~2Fb", "foo", "\"foo\"", "/foo/",
+            "-foo-", ".foo.", "", ".", "..", "猫", "犬", "~", "~2E", "~2E~2E", "%2F",
         ];
         let slugs: std::collections::HashSet<_> = names.iter().map(|s| make_slug(s)).collect();
         assert_eq!(slugs.len(), names.len());
@@ -840,15 +840,9 @@ mod tests {
         let l = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
 
         assert_eq!(is_nonfree("arch", &[], &[]), None);
-        assert_eq!(
-            is_nonfree("arch", &l(&["MIT"]), &l(&["main"])),
-            Some(false)
-        );
+        assert_eq!(is_nonfree("arch", &l(&["MIT"]), &l(&["main"])), Some(false));
         assert_eq!(is_nonfree("nix", &l(&["Unfree"]), &[]), Some(true));
-        assert_eq!(
-            is_nonfree("gentoo", &l(&["MSttfEULA"]), &[]),
-            Some(true)
-        );
+        assert_eq!(is_nonfree("gentoo", &l(&["MSttfEULA"]), &[]), Some(true));
         assert_eq!(
             is_nonfree("arch", &l(&["custom:proprietary"]), &[]),
             Some(true)

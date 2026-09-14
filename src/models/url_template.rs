@@ -7,7 +7,7 @@
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Fields<'a> {
     pub slug: &'a str,
-    pub trackname: Option<&'a str>,
+    pub package: Option<&'a str>,
     pub name: &'a str,
     pub pkg_base: Option<&'a str>,
     pub version: Option<&'a str>,
@@ -19,7 +19,7 @@ impl<'a> Fields<'a> {
     fn get(&self, name: &str) -> Option<&'a str> {
         let v = match name {
             "slug" => Some(self.slug),
-            "trackname" => self.trackname,
+            "package" => self.package,
             "name" => Some(self.name),
             "pkg_base" => self.pkg_base,
             "version" => self.version,
@@ -146,7 +146,7 @@ mod tests {
     fn fields() -> Fields<'static> {
         Fields {
             slug: "firefox",
-            trackname: Some("firefox"),
+            package: Some("firefox"),
             name: "firefox",
             pkg_base: Some("firefox"),
             version: Some("154.0.1-1"),
@@ -193,6 +193,16 @@ mod tests {
         assert_eq!(
             expand("https://sources.debian.org/src/{pkg_base}/{version}/", &f).as_deref(),
             Some("https://sources.debian.org/src/firefox/154.0.1-1/")
+        );
+
+        let nix = Fields {
+            package: Some("python314Packages.redis"),
+            name: "redis",
+            ..fields()
+        };
+        assert_eq!(
+            expand("https://x/?query={package|quote}", &nix).as_deref(),
+            Some("https://x/?query=python314Packages.redis")
         );
 
         // Zero placeholders is a valid URL.

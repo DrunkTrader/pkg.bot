@@ -321,6 +321,7 @@ pub struct Repo {
     pub branch: Option<String>,
 
     pub homepage_url: Option<String>,
+    pub links: JsonString,
     pub pkg_url_template: Option<String>,
     pub source_url_template: Option<String>,
     pub meta: JsonString,
@@ -346,6 +347,7 @@ pub struct Package {
 
     pub slug: String,
     pub name: String,
+    pub package: String,
     pub name_norm: String,
     pub excerpt: Option<String>,
     pub description: Option<String>,
