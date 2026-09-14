@@ -2,6 +2,7 @@
 
 {% block title %}{{ pkg.name }} {{ pkg.version }} &middot; {{ repo.name }} &mdash; pkgs{% endblock %}
 {% block description %}{{ pkg.excerpt | default(value=pkg.name) }} &mdash; {{ pkg.name }} {{ pkg.version }} in {{ repo.name }}.{% endblock %}
+{% block feed_title %}{{ pkg.name }} · {{ repo.name }} — pkgbot{% endblock %}
 
 {% block content %}
 {# Every value interpolated into it is URL encoded, so it is output unescaped. #}
@@ -20,10 +21,13 @@
   </nav>
 
   <header class="head">
-    <h1 class="hstack">
-      {{ pkg.name }}
-      {%- if pkg.version %}<span class="badge outline">{{ pkg.version }}</span>{% endif %}
-    </h1>
+    <div class="hstack justify-between">
+      <h1 class="hstack">
+        {{ pkg.name }}
+        {%- if pkg.version %}<span class="badge outline">{{ pkg.version }}</span>{% endif %}
+      </h1>
+      {% include "partials/feed-link.html" %}
+    </div>
     {% if pkg.slug != pkg.name %}<p class="slug"><code class="text-light"><small>{{ pkg.slug }}</small></code></p>{% endif %}
     {% if pkg.excerpt %}<p class="excerpt">{{ pkg.excerpt }}</p>{% endif %}
   </header>

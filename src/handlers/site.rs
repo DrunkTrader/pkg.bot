@@ -248,6 +248,7 @@ pub async fn render_search(
 pub async fn get_package(
     State(ctx): State<Arc<Ctx>>,
     Path((repo_slug, pkg_slug)): Path<(String, String)>,
+    uri: Uri,
 ) -> Response {
     let repo = match ctx.repo(&repo_slug) {
         Some(r) => r,
@@ -270,8 +271,22 @@ pub async fn get_package(
         }
     };
 
+    let repo_url = format!("{}/repos/{}", ctx.consts.root_url, repo.slug);
+    let item = package_item(&repo_url, &pkg);
+    let feed_url = format!("{}/feed.xml", item.link);
+    if uri.path().ends_with("/feed.xml") {
+        return render_feed(Feed {
+            title: format!("{} · {} - pkg.bot", pkg.name, repo.name),
+            description: format!("Updates to {} in {}.", pkg.name, repo.name),
+            link: item.link.clone(),
+            self_link: feed_url,
+            items: vec![item],
+        });
+    }
+
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "package");
+    tpl_ctx.insert("feed_url", &feed_url);
     tpl_ctx.insert("repo", repo);
 
     // The package's pages on the repo's own website.

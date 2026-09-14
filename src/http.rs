@@ -33,6 +33,7 @@ pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
                 .route("/repos.xml", get(site::render_repos))
                 .route("/repos/{repo}", get(site::render_search))
                 .route("/repos/{repo}/{pkg}", get(site::get_package))
+                .route("/repos/{repo}/{pkg}/feed.xml", get(site::get_package))
                 .route("/static/{*path}", get(serve_static))
                 .layer(middleware::from_fn(req_time)),
         );
