@@ -385,19 +385,12 @@ body.index {
   }
 }
 
-.slug,
-.excerpt {
+.slug, .excerpt {
   margin: var(--space-1) 0 0;
 }
 
 .excerpt {
   font-size: var(--text-7);
-}
-
-footer {
-  margin-top: var(--space-3);
-  font-size: var(--text-8);
-  gap: var(--space-2);
 }
 
 .repo-info dl {
@@ -412,6 +405,16 @@ footer {
   }
 }
 
+.button[data-variant="secondary"] {
+  border: 1px solid var(--border);
+}
+
+footer {
+  margin-top: var(--space-3);
+  font-size: var(--text-8);
+  gap: var(--space-2);
+}
+
 aside {
   font-size: var(--text-7);
 
@@ -424,34 +427,39 @@ aside {
   }
 }
 
-pre {
-  border: 1px solid var(--border);
-}
 code {
   font-size: var(--text-regular);
 }
 
 /* Package page */
 .package-overview {
-  padding: 0;
-
   table tr {
     border: 0;
+  }
+
+  tbody + tbody {
+    border-top: 1px solid var(--border);
   }
 
   .package-details-table,
   .package-actions {
     min-width: 0;
-    padding: var(--space-6);
   }
 
   .package-actions {
-    border-left: 1px solid var(--border);
-
     .button {
+      min-width: 0;
+      max-width: 100%;
       justify-content: flex-start;
       white-space: normal;
       text-align: left;
+    }
+
+    .package-link-url {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .icon {
@@ -460,11 +468,6 @@ code {
   }
 
   .package-install {
-    margin-top: auto;
-    margin-inline: calc(-1 * var(--space-6));
-    margin-bottom: calc(-1 * var(--space-6));
-    padding: var(--space-6);
-    border-top: 1px solid var(--border);
     min-width: 0;
     font-size: var(--text-7);
 
@@ -531,11 +534,6 @@ code {
 }
 
 @media screen and (max-width: 768px) {
-  .package-overview .package-actions {
-    border-left: 0;
-    border-top: 1px solid var(--border);
-  }
-
   .search-bar select {
     max-width: 40%;
   }

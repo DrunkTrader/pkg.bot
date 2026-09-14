@@ -2,7 +2,7 @@
 {%- if not install_name -%}
   {%- set install_name = pkg.name -%}
 {%- endif -%}
-<section class="package-install" aria-label="Install">
+<section class="card package-install mt-6" aria-label="Install">
   <h4>Install</h4>
   {%- if repo.manager == "nix" %}
     <pre><code>nix-shell -p {{ install_name -}}</code></pre>
