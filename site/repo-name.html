@@ -1,0 +1,1 @@
+<a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}"{% if repo_name_class is defined %} class="{{ repo_name_class }}"{% endif %}><span class="avatar" style="background: {{ repo.brand_color | default(value='#bbb') }}" aria-hidden="true"></span> {{ repo.name }}</a>

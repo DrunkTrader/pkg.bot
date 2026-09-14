@@ -11,7 +11,7 @@
       <div id="results-summary" class="summary text-light">
         {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
         {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
-        {%- if repo.brand_color %} <span class="avatar" style="background: {{ repo.brand_color }}" aria-hidden="true"></span>{% endif %} <a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">{{ repo.name }}</a>
+        {% include "repo-name.html" %}
         {% if render_time %}<span aria-label="Rendered in {{ render_time }}">&mdash; {{ render_time }}</span>{% endif %}
       </div>
 

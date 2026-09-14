@@ -45,8 +45,9 @@
         <tr>
           <th scope="row" class="col-repo repo-details">
             <div class="repo-heading">
-              <span class="avatar" style="background: {{ r.brand_color | default(value='#bbb') }}" aria-hidden="true"></span>
-              <a class="repo-name" href="{{ consts.root_url | safe }}/repos/{{ r.slug }}">{{ r.name }}</a>
+              {% set repo = r %}
+              {% set repo_name_class = "repo-name" %}
+              {% include "repo-name.html" %}
               {%- if r.branch %}<span class="badge outline">{{ r.branch }}</span>{% endif %}
             </div>
             <p class="repo-links">
