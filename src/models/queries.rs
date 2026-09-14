@@ -145,3 +145,78 @@ fn filters(sql: &str, pairs: &str, platform: &str) -> String {
 
     sql.replace("{FILTERS}", &f)
 }
+
+/// Add version/date comparisons clauses.
+pub fn comparisons(sql: &str, pq: &super::PackageQuery, first: usize) -> String {
+    let clauses: Vec<_> = [
+        ("p.version_norm", pq.version.as_str()),
+        ("substr(p.updated_at, 1, 10)", pq.updated_at.as_str()),
+    ]
+    .iter()
+    .enumerate()
+    .map(|(i, (column, value))| {
+        let param = first + i;
+        if value.is_empty() {
+            format!("AND ${param} IS NULL")
+        } else {
+            let (op, _) = super::get_comparator(value);
+            format!("AND {column} {op} ${param}")
+        }
+    })
+    .collect();
+    sql.replace("{COMPARISONS}", &clauses.join("\n"))
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    use super::*;
+    use crate::models::{get_comparator, normalize_version, PackageQuery};
+
+    #[tokio::test]
+    async fn filter_dates_and_numeric_versions() {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        sqlx::raw_sql("CREATE TABLE packages (repo_id INTEGER, version_norm TEXT, updated_at TEXT, platforms TEXT);
+            CREATE TABLE package_facets (package_id INTEGER, kind TEXT, value TEXT);
+            INSERT INTO packages VALUES
+            (1, '00002.00000.00000', '2024-02-28T23:59:59Z', '[]'),
+            (1, '00010.00000.00000', '2024-02-29T12:00:00Z', '[]'),
+            (1, '00011.00000.00000', '2024-03-01T00:00:00Z', '[]'),
+            (1, NULL, NULL, '[]');").execute(&db).await.unwrap();
+        // Include id for the correlated facet filter.
+        sqlx::query("ALTER TABLE packages ADD COLUMN id INTEGER")
+            .execute(&db)
+            .await
+            .unwrap();
+        for (version, date, expected) in [
+            ("", "", 4_i64),
+            ("2", "", 1),
+            (">2", "", 2),
+            ("<10", "", 1),
+            ("", "2024-02-29", 1),
+            ("", ">2024-02-29", 1),
+            ("", "<2024-02-29", 1),
+            (">2", "<2024-03-01", 1),
+        ] {
+            let mut pq = PackageQuery {
+                version: version.into(),
+                updated_at: date.into(),
+                ..Default::default()
+            };
+            pq.validate().unwrap();
+            let sql = comparisons(&BY_NAME.count, &pq, 7);
+            let count: i64 = sqlx::query_scalar(&sql)
+                .bind(1_i64)
+                .bind("")
+                .bind("")
+                .bind("[]")
+                .bind("")
+                .bind(100_i64)
+                .bind(normalize_version(get_comparator(&pq.version).1))
+                .bind((!pq.updated_at.is_empty()).then(|| get_comparator(&pq.updated_at).1))
+                .fetch_one(&db)
+                .await
+                .unwrap();
+            assert_eq!(count, expected, "{version} {date}");
+        }
+    }
+}

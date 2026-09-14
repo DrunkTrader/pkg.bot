@@ -165,7 +165,7 @@ pub const REPO_SORT_FIELDS: [&str; 6] = [
 pub const REPO_FILTERS: [&str; 3] = ["family", "distro", "manager"];
 
 /// Package search filters.
-pub const PACKAGE_FILTERS: [&str; 7] = [
+pub const PACKAGE_FILTERS: [&str; 9] = [
     "license",
     "tag",
     "maintainer",
@@ -173,6 +173,8 @@ pub const PACKAGE_FILTERS: [&str; 7] = [
     "platform",
     "status",
     "is_nonfree",
+    "version",
+    "updated_at",
 ];
 
 /// `?order_by=&order=` on a listing page.
@@ -412,9 +414,14 @@ pub struct PackageQuery {
     #[serde(default)]
     pub status: String,
 
-    /// Accepts "true"/"false" or "1"/"0"; validate() converts these to "1"/"0".
     #[serde(default)]
     pub is_nonfree: String,
+
+    #[serde(default)]
+    pub version: String,
+
+    #[serde(default)]
+    pub updated_at: String,
 
     /// Keyset pagination fields.
     #[serde(default)]
@@ -454,6 +461,37 @@ impl PackageQuery {
             _ => return Err("is_nonfree must be true or false"),
         };
 
+        // Validate semver and date strings with optional > and < comparators.
+        self.version.retain(|c| !c.is_whitespace());
+        self.updated_at.retain(|c| !c.is_whitespace());
+        if !self.version.is_empty() {
+            let (_, value) = get_comparator(&self.version);
+            let parts: Vec<_> = value.split('.').collect();
+            if parts.len() > 3
+                || parts.iter().any(|p| {
+                    p.is_empty()
+                        || !p.bytes().all(|c| c.is_ascii_digit())
+                        || (p.len() > 1 && p.starts_with('0'))
+                })
+            {
+                return Err("version must be x, x.y, or x.y.z optionally prefixed by > or <");
+            }
+        }
+        if !self.updated_at.is_empty() {
+            let (_, value) = get_comparator(&self.updated_at);
+            if value.len() != 10
+                || !value.bytes().enumerate().all(|(i, c)| {
+                    if i == 4 || i == 7 {
+                        c == b'-'
+                    } else {
+                        c.is_ascii_digit()
+                    }
+                })
+                || chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").is_err()
+            {
+                return Err("updated_at must be yyyy-mm-dd, optionally prefixed by > or <");
+            }
+        }
         Ok(())
     }
 
@@ -475,6 +513,8 @@ impl PackageQuery {
     /// Get every non-empty filter as (key, value) pairs for display.
     pub fn filters(&self) -> Vec<(&'static str, &str)> {
         [
+            ("version", self.version.as_str()),
+            ("updated_at", self.updated_at.as_str()),
             ("license", self.license.trim()),
             ("tag", self.tag.trim()),
             ("maintainer", self.maintainer.trim()),
@@ -710,4 +750,100 @@ pub struct ImportConfig {
 
     #[serde(default)]
     pub min_packages: i32,
+}
+
+/// Extract < or > comparator from a string.
+pub fn get_comparator(value: &str) -> (&'static str, &str) {
+    if let Some(value) = value.strip_prefix('>') {
+        (">", value)
+    } else if let Some(value) = value.strip_prefix('<') {
+        ("<", value)
+    } else {
+        ("=", value)
+    }
+}
+
+/// Zero-pad the first 3 numeric parts of a version into a lexically sortable string.
+pub fn normalize_version(v: &str) -> Option<String> {
+    if v.is_empty() {
+        return None;
+    }
+
+    // Remove any numeric epoch prefix ("2:1.0" -> "1.0").
+    let v = v
+        .split_once(':')
+        .filter(|(epoch, _)| !epoch.is_empty() && epoch.chars().all(|c| c.is_ascii_digit()))
+        .map_or(v, |(_, rest)| rest);
+
+    let mut parts: Vec<String> = v
+        .split(|c: char| !c.is_ascii_digit())
+        .filter(|s| !s.is_empty())
+        .take(3)
+        .map(|s| format!("{:05}", s.parse::<u64>().unwrap_or(u64::MAX).min(99999)))
+        .collect();
+    parts.resize(3, "00000".to_string());
+
+    Some(parts.join("."))
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    use super::*;
+
+    #[test]
+    fn validate_comparisons() {
+        for value in ["1", ">1.2", "<1.2.3", "0.0.0", " > 1 . 2 "] {
+            let mut q = PackageQuery {
+                version: value.into(),
+                ..Default::default()
+            };
+            assert!(q.validate().is_ok(), "{value}");
+            assert!(!q.version.contains(' '));
+        }
+        for value in [
+            "=1", ">=1", "<=1", ">", "1.", "1.2.3.4", "v1", "1.2-beta", "01", "1 OR 1=1",
+        ] {
+            let mut q = PackageQuery {
+                version: value.into(),
+                ..Default::default()
+            };
+            assert!(q.validate().is_err(), "{value}");
+        }
+        for value in ["2024-02-29", ">2025-01-01", "< 2026-09-14"] {
+            let mut q = PackageQuery {
+                updated_at: value.into(),
+                ..Default::default()
+            };
+            assert!(q.validate().is_ok(), "{value}");
+        }
+        for value in [
+            "2025-02-29",
+            "2026-13-01",
+            "2026-1-01",
+            "2026-01-01T00:00:00Z",
+            "=2026-01-01",
+            ">=2026-01-01",
+            ">",
+        ] {
+            let mut q = PackageQuery {
+                updated_at: value.into(),
+                ..Default::default()
+            };
+            assert!(q.validate().is_err(), "{value}");
+        }
+        let mut q = PackageQuery {
+            version: " > 2.1 ".into(),
+            updated_at: "2026-09-14".into(),
+            ..Default::default()
+        };
+        q.validate().unwrap();
+        assert!(q.to_query_excluding("").contains("version=%3E2.1&"));
+        assert!(q
+            .to_query_excluding("version")
+            .contains("updated_at=2026-09-14&"));
+        assert_eq!(
+            normalize_version(get_comparator(&q.version).1).as_deref(),
+            Some("00002.00001.00000")
+        );
+    }
 }

@@ -1,5 +1,7 @@
 //! Imports a Repology PostgreSQL dump into a fresh SQLite database.
 
+use crate::models::normalize_version;
+
 use std::{collections::HashMap, error::Error, path::Path, time::Instant};
 
 use serde_json::json;
@@ -683,29 +685,6 @@ fn fts_tokenize(fields: &[&str]) -> Option<String> {
         .collect();
 
     (!words.is_empty()).then(|| words.join(" "))
-}
-
-/// Zero-pad the first 3 numeric parts of a version into a sortable string.
-fn normalize_version(v: &str) -> Option<String> {
-    if v.is_empty() {
-        return None;
-    }
-
-    // Remove any numeric epoch prefix ("2:1.0" -> "1.0").
-    let v = v
-        .split_once(':')
-        .filter(|(epoch, _)| !epoch.is_empty() && epoch.chars().all(|c| c.is_ascii_digit()))
-        .map_or(v, |(_, rest)| rest);
-
-    let mut parts: Vec<String> = v
-        .split(|c: char| !c.is_ascii_digit())
-        .filter(|s| !s.is_empty())
-        .take(3)
-        .map(|s| format!("{:05}", s.parse::<u64>().unwrap_or(u64::MAX).min(99999)))
-        .collect();
-    parts.resize(3, "00000".to_string());
-
-    Some(parts.join("."))
 }
 
 /// Strip surrounding quotes and unescape the string.

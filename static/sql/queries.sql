@@ -47,6 +47,8 @@ WHERE p.repo_id = $1 AND p.slug = $2;
       SELECT 1 FROM JSON_EACH(p.platforms) pf WHERE pf.value = {PF}
   ))
 
+  {COMPARISONS}
+
 -- name: pick-facet
 -- Start with the filter matching the fewest packages to reduce the work.
 -- $1: repo_id

@@ -1,8 +1,8 @@
 use sqlx::sqlite::SqlitePool;
 
 use crate::models::{
-    Cursor, Listing, Package, PackageQuery, Repo, RepoQuery, Sort, BY_FACET, BY_NAME, Q,
-    SEARCH_PACKAGES,
+    get_comparator, comparisons, normalize_version, Cursor, Listing, Package, PackageQuery, Repo,
+    RepoQuery, Sort, BY_FACET, BY_NAME, Q, SEARCH_PACKAGES,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -68,7 +68,8 @@ impl Manager {
 
         // Fetch one extra row to detect whether there is another page after this.
         let sql = if back { &plan.lst.prev } else { &plan.lst.next };
-        let mut packages: Vec<Package> = sqlx::query_as(sql)
+        let sql = comparisons(sql, pq, 9);
+        let mut packages: Vec<Package> = sqlx::query_as(&sql)
             .bind(pq.repo_id)
             .bind(&plan.kind)
             .bind(&plan.value)
@@ -77,6 +78,8 @@ impl Manager {
             .bind(&cur.name)
             .bind(cur.id)
             .bind(pq.limit + 1)
+            .bind(normalize_version(get_comparator(&pq.version).1))
+            .bind((!pq.updated_at.is_empty()).then(|| get_comparator(&pq.updated_at).1))
             .fetch_all(&self.db)
             .await?;
 
@@ -96,7 +99,12 @@ impl Manager {
             return Ok((0, false));
         };
 
-        if plan.residual == "[]" && pq.platform.trim().is_empty() && !plan.kind.is_empty() {
+        if plan.residual == "[]"
+            && pq.platform.trim().is_empty()
+            && !plan.kind.is_empty()
+            && pq.version.is_empty()
+            && pq.updated_at.is_empty()
+        {
             let exact: Option<i64> = sqlx::query_scalar(
                 "SELECT package_count FROM facet_counts
                  WHERE repo_id = $1 AND kind = $2 AND value = $3",
@@ -112,13 +120,16 @@ impl Manager {
             }
         }
 
-        let n: i64 = sqlx::query_scalar(&plan.lst.count)
+        let sql = comparisons(&plan.lst.count, pq, 7);
+        let n: i64 = sqlx::query_scalar(&sql)
             .bind(pq.repo_id)
             .bind(&plan.kind)
             .bind(&plan.value)
             .bind(&plan.residual)
             .bind(pq.platform.trim())
             .bind(MAX_COUNT + 1)
+            .bind(normalize_version(get_comparator(&pq.version).1))
+            .bind((!pq.updated_at.is_empty()).then(|| get_comparator(&pq.updated_at).1))
             .fetch_one(&self.db)
             .await?;
 
@@ -184,7 +195,8 @@ impl Manager {
         let norm = norm_name(term);
         let wanted = pq.facets();
 
-        let mut packages: Vec<Package> = sqlx::query_as(&SEARCH_PACKAGES)
+        let sql = comparisons(&SEARCH_PACKAGES, pq, 9);
+        let mut packages: Vec<Package> = sqlx::query_as(&sql)
             .bind(pq.repo_id)
             .bind(fts)
             .bind(&raw)
@@ -193,6 +205,8 @@ impl Manager {
             .bind(pq.platform.trim())
             .bind(pq.offset)
             .bind(pq.limit + 1)
+            .bind(normalize_version(get_comparator(&pq.version).1))
+            .bind((!pq.updated_at.is_empty()).then(|| get_comparator(&pq.updated_at).1))
             .fetch_all(&self.db)
             .await?;
 

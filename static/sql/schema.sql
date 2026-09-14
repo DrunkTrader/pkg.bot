@@ -98,6 +98,10 @@ CREATE TABLE IF NOT EXISTS packages (
 
 CREATE INDEX IF NOT EXISTS idx_packages_name      ON packages (name);
 CREATE INDEX IF NOT EXISTS idx_packages_repo_name ON packages (repo_id, name);
+CREATE INDEX IF NOT EXISTS idx_packages_repo_version ON packages (repo_id, version_norm);
+CREATE INDEX IF NOT EXISTS idx_packages_version ON packages (version_norm);
+CREATE INDEX IF NOT EXISTS idx_packages_repo_updated ON packages (repo_id, substr(updated_at, 1, 10));
+CREATE INDEX IF NOT EXISTS idx_packages_updated ON packages (substr(updated_at, 1, 10));
 
 -- maintainers
 CREATE TABLE IF NOT EXISTS maintainers (

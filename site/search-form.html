@@ -26,6 +26,18 @@
   </fieldset>
 
   <label data-field>
+    Version
+    <input type="text" name="version" value="{{ q.version }}" placeholder="eg: &gt;2.1, 3.2.1, &lt;4" aria-describedby="version-hint" />
+    <small data-hint id="version-hint">Use x, x.y, or x.y.z. &gt; and &lt; signs work</small>
+  </label>
+
+  <label data-field>
+    Last updated
+    <input type="text" name="updated_at" value="{{ q.updated_at }}" placeholder="eg: &gt;2026-01-01" aria-describedby="updated-at-hint" />
+    <small data-hint id="updated-at-hint">Use yyyy-mm-dd. &gt; and &lt; signs work</small>
+  </label>
+
+  <label data-field>
     Maintainer
     <input type="text" name="maintainer" value="{{ q.maintainer }}" placeholder="eg: alice" />
     <small data-hint>The maintainer's handle in the repo.</small>
