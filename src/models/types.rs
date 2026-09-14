@@ -14,10 +14,35 @@ use super::url_template;
 #[sqlx(rename_all = "lowercase")]
 pub enum PackageStatus {
     #[default]
-    Active,
-    Broken,
+    Unprocessed,
+    Newest,
     Outdated,
-    Deleted,
+    Ignored,
+    Unique,
+    Devel,
+    Legacy,
+    Incorrect,
+    Untrusted,
+    Noscheme,
+    Rolling,
+}
+
+impl PackageStatus {
+    pub fn from_versionclass(value: i32) -> Self {
+        match value {
+            1 => Self::Newest,
+            2 => Self::Outdated,
+            3 => Self::Ignored,
+            4 => Self::Unique,
+            5 => Self::Devel,
+            6 => Self::Legacy,
+            7 => Self::Incorrect,
+            8 => Self::Untrusted,
+            9 => Self::Noscheme,
+            10 => Self::Rolling,
+            _ => Self::Unprocessed,
+        }
+    }
 }
 
 /// JSON array wrapper for SQLite TEXT columns storing JSON arrays.
@@ -366,7 +391,7 @@ pub struct PackageQuery {
     #[serde(default)]
     pub name: String,
 
-    /// Filters. Each takes a single value, eg: `license=MIT&status=broken`.
+    /// Filters. Each takes a single value, eg: `license=MIT&status=outdated`.
     #[serde(default)]
     pub maintainer: String,
 

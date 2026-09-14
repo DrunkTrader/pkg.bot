@@ -9,7 +9,7 @@ use sqlx::{
 };
 use tokio::sync::mpsc;
 
-use crate::models::{url_template, ImportConfig, Maintainer, IMPORT, SCHEMA};
+use crate::models::{url_template, ImportConfig, Maintainer, PackageStatus, IMPORT, SCHEMA};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -65,7 +65,6 @@ struct SrcPackage {
     licenses: Option<Vec<String>>,
     effname: String,
     versionclass: i32,
-    flags: i32,
     shadow: bool,
     platforms: Option<Vec<String>>,
     subrepos: Option<Vec<String>>,
@@ -96,7 +95,7 @@ struct Package {
     platforms: String,
     groups: String,
     keywords: String,
-    status: &'static str,
+    status: PackageStatus,
     meta: String,
     identity_tokens: Option<String>,
     keyword_tokens: Option<String>,
@@ -526,8 +525,6 @@ fn transform_package(
         "id": p.id,
         "family": p.family,
         "trackname": p.trackname,
-        "versionclass": p.versionclass,
-        "flags": p.flags,
         "shadow": p.shadow,
         "subrepos": subrepos,
         "arch": p.arch,
@@ -558,11 +555,7 @@ fn transform_package(
         platforms: json!(platforms).to_string(),
         groups: json!(groups).to_string(),
         keywords: json!(keywords).to_string(),
-        status: if p.versionclass == 2 {
-            "outdated"
-        } else {
-            "active"
-        },
+        status: PackageStatus::from_versionclass(p.versionclass),
         meta,
         maintainers: ids,
         created_at: p.created_at,

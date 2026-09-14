@@ -50,7 +50,7 @@
             <th scope="row" class="col-package package-details">
               <div class="package-heading">
                 <a class="package-name" href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a>
-                {%- if p.status != "active" %}<span class="badge" data-variant="warning">{{ p.status }}</span>{% endif %}
+                <span class="badge outline"{% if p.status in ["outdated", "incorrect", "untrusted"] %} data-variant="warning"{% endif %}>{{ p.status }}</span>
               </div>
               {% if p.slug != p.name %}<p class="slug"><code>{{ p.slug }}</code></p>{% endif %}
               {% if p.excerpt or p.description %}

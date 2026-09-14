@@ -61,7 +61,7 @@
   <div data-field>
     <label for="status">Status</label>
     <select id="status" name="status">
-      {%- for s in ["", "active", "broken", "outdated"] %}
+      {%- for s in ["", "unprocessed", "newest", "outdated", "ignored", "unique", "devel", "legacy", "incorrect", "untrusted", "noscheme", "rolling"] %}
       <option value="{{ s }}"{% if s == q.status %} selected{% endif %}>{% if s %}{{ s | capitalize }}{% else %}Any{% endif %}</option>
       {%- endfor %}
     </select>

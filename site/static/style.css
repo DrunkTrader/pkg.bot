@@ -437,6 +437,20 @@ aside {
     vertical-align: top;
   }
 
+  .package-maintainers {
+    align-items: flex-start;
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .icon {
+      flex: none;
+    }
+  }
+
   .tags {
     font-size: var(--text-7);
     a {

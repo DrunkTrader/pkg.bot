@@ -56,7 +56,6 @@ WITH ranked AS (
     SELECT id::BIGINT AS id, repo, family, srcname, binnames, trackname, visiblename,
            rawversion, version, maintainers, category, comment, licenses, effname, links,
            COALESCE(versionclass, 0)::INT AS versionclass,
-           COALESCE(flags, 0)::INT AS flags,
            shadow,
            -- These are used by package url templates, eg: https://site.com/{subrepo}/{arch}/{name} etc.
            subrepo, arch,
@@ -74,7 +73,7 @@ WITH ranked AS (
 )
 SELECT p.id, p.repo, p.family, p.srcname, p.binnames, p.trackname, p.visiblename,
        p.rawversion, p.version, p.maintainers, p.category, p.comment, p.licenses,
-       p.effname, p.versionclass, p.flags, p.shadow, p.platforms, p.subrepos,
+       p.effname, p.versionclass, p.shadow, p.platforms, p.subrepos,
        p.subrepo, p.arch,
        -- Links are [kind, link_id] pairs. Only need to get project homepage (kind=0)
        -- as the rest of the urls (package permalink, repo) are in repos.metadata->'packagelinks.

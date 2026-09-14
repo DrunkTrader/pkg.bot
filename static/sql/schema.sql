@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS packages (
     keyword_tokens    TEXT,
     body_tokens       TEXT,
 
-    status            TEXT    NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'broken', 'outdated', 'deleted')),
+    status            TEXT    NOT NULL DEFAULT 'unprocessed' CHECK (status IN ('unprocessed', 'newest', 'outdated', 'ignored', 'unique', 'devel', 'legacy', 'incorrect', 'untrusted', 'noscheme', 'rolling')),
     download_bytes    INTEGER,
     installed_bytes   INTEGER,
     score             REAL    NOT NULL DEFAULT 0,

@@ -23,7 +23,6 @@
       <h1 class="hstack">
         {{ pkg.name }}
         {%- if pkg.version %}<span class="badge outline">{{ pkg.version }}</span>{% endif %}
-        {%- if pkg.status != "active" %}<span class="badge" data-variant="warning">{{ pkg.status }}</span>{% endif %}
       </h1>
       {% if pkg.slug != pkg.name %}<p class="slug"><code>{{ pkg.slug }}</code></p>{% endif %}
       {% if pkg.excerpt %}<p class="excerpt">{{ pkg.excerpt }}</p>{% endif %}
@@ -32,13 +31,45 @@
     {% if pkg.description and pkg.description != pkg.excerpt %}<p>{{ pkg.description }}</p>{% endif %}
 
     <div class="card table mt-6">
-      <table>
+      <table aria-label="Package details">
         <tbody>
           <tr>
-            <th>Repository</th>
-            <td><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">{{ repo.name }}</a> ({{ repo.manager }})</td>
+            <th>Version</th>
+            <td>{% if pkg.version %}{{ pkg.version }}{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}</td>
+          </tr>
+          <tr>
+            <th>Status</th>
+            <td><span class="badge outline"{% if pkg.status in ["outdated", "incorrect", "untrusted"] %} data-variant="warning"{% endif %}>{{ pkg.status }}</span></td>
+          </tr>
+          <tr>
+            <th>Project name</th>
+            <td>{% if pkg.project_name is defined and pkg.project_name %}{{ pkg.project_name }}{% else %}<span class="text-light" aria-label="Project name unavailable">&mdash;</span>{% endif %}</td>
+          </tr>
+          <tr>
+            <th>Binary names</th>
+            <td>
+              <div class="hstack">
+                {% set binary_names = pkg.binary_names | default(value=[]) %}
+                {%- for name in binary_names %}
+                <span class="badge outline">{{ name }}</span>
+                {%- else %}<span class="text-light" aria-label="Binary names unavailable">&mdash;</span>
+                {%- endfor %}
+              </div>
+            </td>
           </tr>
           {% if pkg.pkg_base %}<tr><th>Source package</th><td>{{ pkg.pkg_base }}</td></tr>{% endif %}
+          {% if (pkg.subrepo is defined and pkg.subrepo) or (pkg.meta.subrepos is defined and pkg.meta.subrepos | length > 0) %}
+          <tr>
+            <th>Subrepos</th>
+            <td class="hstack">
+              {% if pkg.meta.subrepos is defined and pkg.meta.subrepos | length > 0 %}
+              {%- for subrepo in pkg.meta.subrepos %}
+              <span class="badge outline">{{ subrepo }}</span>
+              {%- endfor %}
+              {% else %}<span class="badge outline">{{ pkg.subrepo }}</span>{% endif %}
+            </td>
+          </tr>
+          {% endif %}
           {% if pkg.licenses | length > 0 %}
           <tr>
             <th>Licenses</th>
@@ -47,16 +78,6 @@
               <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}">{{ l }}</a>
               {%- endfor %}
               {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge" data-variant="warning">Non-free</span>{% endif %}
-            </td>
-          </tr>
-          {% endif %}
-          {% if pkg.platforms | length > 0 %}
-          <tr>
-            <th>Platforms</th>
-            <td class="hstack">
-              {%- for pf in pkg.platforms %}
-              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}platform={{ pf | urlencode }}">{{ pf }}</a>
-              {%- endfor %}
             </td>
           </tr>
           {% endif %}
@@ -74,19 +95,46 @@
           {% if pkg.maintainers | length > 0 %}
           <tr>
             <th>Maintainers</th>
-            <td class="hstack">
-              {%- for m in pkg.maintainers %}
-              <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}">{{ m.name | default(value=m.handle) }}</a>
-              {%- endfor %}
+            <td>
+              <div class="vstack gap-1 package-maintainers">
+                {%- for m in pkg.maintainers %}
+                <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}"><span class="icon icon-avatar" aria-hidden="true"></span><span>{{ m.name | default(value=m.handle) }}</span></a>
+                {%- endfor %}
+              </div>
             </td>
           </tr>
           {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card table mt-6">
+      <table aria-label="Repository and build details">
+        <tbody>
+          <tr>
+            <th>Repository</th>
+            <td><a href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">{{ repo.name }}</a> ({{ repo.manager }})</td>
+          </tr>
+          <tr>
+            <th>Platforms</th>
+            <td class="hstack">
+              {%- for pf in pkg.platforms %}
+              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}platform={{ pf | urlencode }}">{{ pf }}</a>
+              {%- else %}
+              {% if pkg.meta.arch is defined and pkg.meta.arch %}
+              <a class="badge" data-variant="secondary" href="{{ filter_url | safe }}platform={{ pkg.meta.arch | urlencode }}">{{ pkg.meta.arch }}</a>
+              {% else %}<span class="text-light" aria-label="Platforms unavailable">&mdash;</span>{% endif %}
+              {%- endfor %}
+            </td>
+          </tr>
           {% if pkg.download_bytes %}<tr><th>Download size</th><td>{{ pkg.download_bytes | bytes }}</td></tr>{% endif %}
           {% if pkg.installed_bytes %}<tr><th>Installed size</th><td>{{ pkg.installed_bytes | bytes }}</td></tr>{% endif %}
           <tr><th>First seen</th><td>{{ pkg.created_at | truncate(length=10, end="") }}</td></tr>
           <tr><th>Last changed</th><td>{{ pkg.updated_at | truncate(length=10, end="") }}</td></tr>
           {%- for key, val in pkg.meta %}
+          {% if key != "id" and key != "shadow" and key != "subrepos" and key != "arch" and key != "versionclass" and key != "flags" %}
           <tr><th>{{ key | replace(from="_", to=" ") | capitalize }}</th><td>{{ val }}</td></tr>
+          {% endif %}
           {%- endfor %}
         </tbody>
       </table>
