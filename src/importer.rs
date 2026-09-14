@@ -30,7 +30,6 @@ const NONFREE_MARKERS: &[&str] = &[
     "nonredistributable",
 ];
 
-
 /// Repology Repo.
 #[derive(sqlx::FromRow)]
 struct SrcRepo {
@@ -538,8 +537,7 @@ fn transform_package(
         identity_tokens: fts_tokenize(&[&name, &name_norm, &p.trackname, &p.effname]),
         keyword_tokens: fts_tokenize(&[&keywords.join(" "), &groups.join(" ")]),
         body_tokens: fts_tokenize(&[p.comment.as_deref().unwrap_or_default()]),
-        // trackname can contain `/`, eg: freebsd's www/nginx, which breaks URLs.
-        slug: p.trackname.replace('/', "-"),
+        slug: make_slug(&p.trackname),
         name,
         name_norm,
         excerpt: p.comment,
@@ -566,6 +564,26 @@ fn transform_package(
     (row, unknown)
 }
 
+/// Sanitize a package name to e URL-safe slug.
+/// eg: freebsd `www/nginx`, nix `emacsPackages."0blayout"` etc.
+fn make_slug(trackname: &str) -> String {
+    let mut out = String::with_capacity(trackname.len());
+
+    for c in trackname.chars() {
+        match c {
+            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '.' | '_' | '~' | '+' | '@' => out.push(c),
+
+            // Separators become a dash and all other special chars are dropped.
+            c if (c.is_whitespace() || matches!(c, '/' | '\\' | ':')) && !out.ends_with('-') => {
+                out.push('-')
+            }
+            _ => {}
+        }
+    }
+
+    out.trim_matches(['-', '.']).to_string()
+}
+
 /// Make the package page URL for nixpkgs as repology doesn't have it.
 fn make_nix_pkg_url_template(slug: &str) -> Option<String> {
     let channel = match slug {
@@ -575,7 +593,7 @@ fn make_nix_pkg_url_template(slug: &str) -> Option<String> {
     };
 
     Some(format!(
-        "https://search.nixos.org/packages?channel={channel}&query={{slug|quote}}#show={{slug|quote}}"
+        "https://search.nixos.org/packages?channel={channel}&query={{trackname|quote}}#show={{trackname|quote}}"
     ))
 }
 
@@ -772,6 +790,43 @@ mod tests {
 
         assert_eq!(parse_maintainer("@user").slug, "@user");
         assert_eq!(parse_maintainer("a@b c").slug, "a@b c");
+    }
+
+    #[test]
+    fn slugs() {
+        // `+` and `@` retained.
+        assert_eq!(make_slug("gtk+"), "gtk+");
+        assert_eq!(
+            make_slug("python314Packages.redis"),
+            "python314Packages.redis"
+        );
+        assert_eq!(make_slug("node@22"), "node@22");
+
+        // Separators are turned into dashes.
+        assert_eq!(make_slug("www/nginx"), "www-nginx");
+        assert_eq!(
+            make_slug("libudev-zero hotplugging helper"),
+            "libudev-zero-hotplugging-helper"
+        );
+        assert_eq!(make_slug("a//b"), "a-b");
+
+        // Other special chars are dropped.
+        assert_eq!(
+            make_slug("emacsPackages.\"0blayout\""),
+            "emacsPackages.0blayout"
+        );
+        assert_eq!(
+            make_slug("vscode-extensions.\"1Password\".op-vscode"),
+            "vscode-extensions.1Password.op-vscode"
+        );
+        assert_eq!(
+            make_slug("emacsPackages.\"term+key-intercept\""),
+            "emacsPackages.term+key-intercept"
+        );
+
+        // leading/trailing separators are stripped.
+        assert_eq!(make_slug("/foo/"), "foo");
+        assert_eq!(make_slug(".."), "");
     }
 
     #[test]

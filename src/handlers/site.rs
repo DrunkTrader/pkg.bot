@@ -267,6 +267,7 @@ pub async fn get_package(
     let meta: serde_json::Value = serde_json::from_str(&pkg.meta.0).unwrap_or_default();
     let fields = url_template::Fields {
         slug: &pkg.slug,
+        trackname: meta["trackname"].as_str(),
         name: &pkg.name,
         pkg_base: pkg.pkg_base.as_deref(),
         version: pkg.version.as_deref(),
@@ -421,7 +422,6 @@ fn render_packages_rss(
 }
 
 fn package_item(repo_url: &str, p: &Package) -> Item {
-    // Package slugs are not URL-safe (eg: nix's `emacsPackages."0blayout"`).
     let url = format!("{}/{}", repo_url, urlencoding::encode(&p.slug));
 
     Item {

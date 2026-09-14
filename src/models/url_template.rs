@@ -7,6 +7,7 @@
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Fields<'a> {
     pub slug: &'a str,
+    pub trackname: Option<&'a str>,
     pub name: &'a str,
     pub pkg_base: Option<&'a str>,
     pub version: Option<&'a str>,
@@ -18,6 +19,7 @@ impl<'a> Fields<'a> {
     fn get(&self, name: &str) -> Option<&'a str> {
         let v = match name {
             "slug" => Some(self.slug),
+            "trackname" => self.trackname,
             "name" => Some(self.name),
             "pkg_base" => self.pkg_base,
             "version" => self.version,
@@ -144,6 +146,7 @@ mod tests {
     fn fields() -> Fields<'static> {
         Fields {
             slug: "firefox",
+            trackname: Some("firefox"),
             name: "firefox",
             pkg_base: Some("firefox"),
             version: Some("154.0.1-1"),
