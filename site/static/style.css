@@ -204,6 +204,14 @@ body.index {
   font-size: var(--text-7);
 }
 
+.license-badge {
+  display: inline-block;
+  max-width: min(20ch, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .non-free {
   color: var(--danger);
   background-color: light-dark(

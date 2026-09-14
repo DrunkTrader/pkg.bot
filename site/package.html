@@ -79,7 +79,7 @@
               <th>Licenses</th>
               <td class="hstack">
                 {%- for l in pkg.licenses %}
-                <a class="badge outline" href="{{ filter_url | safe }}license={{ l | urlencode }}">{{ l }}</a>
+                <a class="badge outline license-badge" href="{{ filter_url | safe }}license={{ l | urlencode }}" title="{{ l }}">{{ l }}</a>
                 {%- endfor %}
                 {%- if pkg.is_nonfree is defined and pkg.is_nonfree %}<span class="badge non-free">Non-free</span>{% endif %}
               </td>

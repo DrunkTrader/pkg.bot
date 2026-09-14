@@ -79,7 +79,7 @@
                 <a class="badge non-free" href="{{ add_url.is_nonfree | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
                 {%- endif %}
                 {%- for l in p.licenses %}
-                <a class="badge outline" href="{{ add_url.license | safe }}license={{ l | urlencode }}" title="Filter by license">{{ l }}</a>
+                <a class="badge outline license-badge" href="{{ add_url.license | safe }}license={{ l | urlencode }}" title="Filter by license: {{ l }}">{{ l }}</a>
                 {%- else %}{% if not p.is_nonfree %}<span class="text-light" aria-label="License unavailable">—</span>{% endif %}
                 {%- endfor %}
               </div>
