@@ -350,7 +350,7 @@ fn package_url(template: &str, pkg: &Package) -> Option<String> {
 /// This is used to populate the "latest repos" dropdown in the search bar.
 ///
 /// Split slugs by underscores, group by the first term (eg: fedora_44, fedora_43 -> fedora),
-/// pick the highest numeric version within each group.
+/// pick the highest numeric version within each group. Also include unstable repos.
 fn get_latest_repos(repos: &[Repo]) -> Vec<&Repo> {
     fn release(repo: &Repo) -> (String, Vec<u64>, u8) {
         let parts: Vec<_> = repo.slug.split('_').collect();
@@ -389,7 +389,10 @@ fn get_latest_repos(repos: &[Repo]) -> Vec<&Repo> {
     // Preserve the alphabetical ordering of the full list.
     repos
         .iter()
-        .filter(|repo| latest.values().any(|(r, _)| r.id == repo.id))
+        .filter(|repo| {
+            repo.slug.split('_').any(|part| part == "unstable")
+                || latest.values().any(|(r, _)| r.id == repo.id)
+        })
         .collect()
 }
 
@@ -628,6 +631,7 @@ mod search_repo_tests {
         context.insert("repo", &repos[0]);
         context.insert("term", "");
         context.insert("advanced_form", &false);
+        context.insert("asset_ver", "test");
         context.insert("consts", &serde_json::json!({"root_url": "/prefix"}));
         let html = tera::Tera::one_off(
             include_str!("../../site/partials/search-inputs.html"),
@@ -650,12 +654,16 @@ mod search_repo_tests {
             "alpine_edge",
             "arch",
             "aur",
+            "debian_13",
+            "debian_14",
+            "debian_unstable",
             "epel_9",
             "epel_10",
             "fedora_44",
             "fedora_rawhide",
             "manjaro_testing",
             "manjaro_stable",
+            "manjaro_unstable",
             "nix_stable_26_05",
             "nix_unstable",
             "ubuntu_26_10",
@@ -680,10 +688,14 @@ mod search_repo_tests {
                 "alpine_3_24",
                 "arch",
                 "aur",
+                "debian_14",
+                "debian_unstable",
                 "epel_10",
                 "fedora_44",
                 "manjaro_stable",
+                "manjaro_unstable",
                 "nix_stable_26_05",
+                "nix_unstable",
                 "ubuntu_26_10",
             ]
         );
