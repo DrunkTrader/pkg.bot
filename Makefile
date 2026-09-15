@@ -1,7 +1,7 @@
 # Try to get the semver from 1) git 2) fallback.
 VERSION := $(or $(shell git describe --tags --abbrev=0 2> /dev/null),0.0.0)
 COMMIT := $(or $(shell git rev-parse --short HEAD 2> /dev/null),"unknown")
-BIN := pkgs
+BIN := pkgbot
 TARGET ?= x86_64-unknown-linux-musl
 
 FRONTEND := site

@@ -1,5 +1,5 @@
 [package]
-name = "pkgs"
+name = "pkgbot"
 description = "Super fast search engine for Linux distro packages."
 homepage = "https://pkg.bot"
 repository = "https://github.com/knadh/pkg.bot"
@@ -37,7 +37,5 @@ mimalloc = { version = "0.1", default-features = false }
 [profile.release]
 strip = true
 lto = true
-# opt-level "z" costs ~1.4x on the import's string and JSON work, for a binary
-# a couple of MB smaller. Switch back if size matters more than throughput.
 opt-level = 3
 codegen-units = 1
