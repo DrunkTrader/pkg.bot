@@ -54,7 +54,7 @@
                 <a class="package-name" href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a>
                 {% if package_urls[p.slug] is defined %}<a class="text-light" href="{{ package_urls[p.slug] }}" rel="noreferrer noopener" aria-label="View {{ p.name }} on {{ repo.name }}" title="View on {{ repo.name }}"><svg class="icon icon-external-link" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#external-link"></use></svg></a>{% endif %}
               </div>
-              {% if p.slug != p.name %}<p class="slug"><code><small>{{ p.slug }}</small></code></p>{% endif %}
+              {% if p.slug != p.name %}<p class="slug"><code>{{ p.slug }}</code></p>{% endif %}
               {% if p.excerpt or p.description %}
               <p class="excerpt">
                 {%- if p.excerpt %}{{ p.excerpt }}
@@ -64,9 +64,11 @@
               {% endif %}
               {% if p.keywords | length > 0 %}
               <div class="package-tags hstack mt-2">
-                {%- for k in p.keywords | slice(end=4) %}
+                {%- for k in p.keywords | slice(end=3) %}
                 <a data-variant="secondary" href="{{ add_url.tag | safe }}tag={{ k | urlencode }}" title="Filter by tag">#{{ k }}</a>
                 {%- endfor %}
+                {%- set keyword_count = p.keywords | length %}
+                {% if keyword_count > 3 %}<span class="text-light">+{{ keyword_count - 3 }}</span>{% endif %}
               </div>
               {% endif %}
             </th>
@@ -75,18 +77,22 @@
                 {%- if p.is_nonfree %}
                 <a class="badge" data-variant="danger" href="{{ add_url.is_nonfree | safe }}is_nonfree=true" title="Filter by non-free licensing">Non-free</a>
                 {%- endif %}
-                {%- for l in p.licenses %}
+                {%- for l in p.licenses | slice(end=3) %}
                 <a class="badge outline license-badge" href="{{ add_url.license | safe }}license={{ l | urlencode }}" title="Filter by license: {{ l }}">{{ l }}</a>
                 {%- else %}{% if not p.is_nonfree %}<span class="text-light" aria-label="License unavailable">—</span>{% endif %}
                 {%- endfor %}
+                {%- set license_count = p.licenses | length %}
+                {% if license_count > 3 %}<span class="text-light">+{{ license_count - 3 }}</span>{% endif %}
               </div>
             </td>
             <td class="package-filters col-maintainer">
               <div class="maintainers vstack gap-1">
-              {%- for m in p.maintainers | slice(end=2) %}
+              {%- for m in p.maintainers | slice(end=5) %}
                 <a href="{{ add_url.maintainer | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer"><svg class="icon icon-avatar" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#avatar"></use></svg><span class="maintainer-name">{{ m.name | default(value=m.handle) }}</span></a>
               {%- else %}<span class="text-light" aria-label="Maintainer unavailable">—</span>
               {%- endfor %}
+              {%- set maintainer_count = p.maintainers | length %}
+              {% if maintainer_count > 5 %}<span class="text-light">+{{ maintainer_count - 5 }}</span>{% endif %}
               </div>
             </td>
             <td class="col-updated text-light">

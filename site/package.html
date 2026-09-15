@@ -28,7 +28,6 @@
       </h1>
       {% include "partials/feed-link.html" %}
     </div>
-    {% if pkg.slug != pkg.name %}<p class="slug"><code class="text-light"><small>{{ pkg.slug }}</small></code></p>{% endif %}
     {% if pkg.excerpt %}<p class="excerpt">{{ pkg.excerpt }}</p>{% endif %}
   </header>
 
