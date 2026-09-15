@@ -35,7 +35,7 @@
   {% if pkg.description and pkg.description != pkg.excerpt %}<p>{{ pkg.description }}</p>{% endif %}
 
   <div class="row package-overview mt-6">
-    <div class="col-8 card table package-details-table">
+    <div class="col-8 card table package-details-table" role="region" aria-label="Package details" tabindex="0">
       <table aria-label="Package details">
         <tbody>
           <tr>

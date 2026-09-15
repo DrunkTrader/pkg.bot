@@ -56,8 +56,10 @@
             </p>
           </th>
           <td class="col-distro">
-            {%- if r.distro %}<a href="{{ add_url.distro | safe }}distro={{ r.distro | urlencode }}" title="Filter by distro">{{ r.distro }}</a>{% else %}&mdash;{% endif %}
-            {%- if r.family != r.distro %}<div><a class="text-light" href="{{ add_url.family | safe }}family={{ r.family | urlencode }}" title="Filter by family">{{ r.family }}</a></div>{% endif %}
+            <div>
+              {%- if r.distro %}<a href="{{ add_url.distro | safe }}distro={{ r.distro | urlencode }}" title="Filter by distro">{{ r.distro }}</a>{% else %}&mdash;{% endif %}
+              {%- if r.family != r.distro %}<a class="text-light" href="{{ add_url.family | safe }}family={{ r.family | urlencode }}" title="Filter by family">{{ r.family }}</a>{% endif %}
+            </div>
           </td>
           <td class="col-manager"><a href="{{ add_url.manager | safe }}manager={{ r.manager | urlencode }}" title="Filter by package manager">{{ r.manager }}</a></td>
           <td class="col-packages">

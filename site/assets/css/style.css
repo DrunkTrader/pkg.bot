@@ -12,20 +12,16 @@ body {
   min-width: 320px;
 }
 
-@layer base {
-  a {
-    text-decoration: none;
-  }
-
-  :is(p, blockquote, figcaption) a {
-    text-decoration: underline;
-  }
-}
-
 @layer components {
   a.badge:hover, a:hover .badge {
     opacity: .8;
   }
+}
+
+:where(:has(> table)) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 th, td {
@@ -52,6 +48,7 @@ thead th {
 
 .feed-link {
   flex: none;
+  overflow: clip;
   opacity: 0.85;
 
   &:hover {
@@ -86,6 +83,7 @@ thead th {
 #footer {
   display: flex;
   flex-wrap: wrap;
+  overflow-x: clip;
   align-items: center;
   justify-content: center;
   gap: var(--space-8);
@@ -242,7 +240,6 @@ body.index {
 }
 
 .packages-wrap {
-  overflow-x: auto;
   padding: 0;
 }
 
@@ -299,10 +296,13 @@ body.index {
     display: block;
   }
 
+  .col-distro a {
+    display: block;
+  }
+
   .col-packages,
   .col-maintainers,
   .col-updated {
-    text-align: right;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
@@ -412,7 +412,142 @@ code {
 }
 
 @media screen and (max-width: 768px) {
-  .search-bar select {
-    max-width: 40%;
+  .search-bar {
+    fieldset.group {
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    fieldset.group > :is(button) {
+      padding: var(--space-3);
+    }
+    fieldset.group > :is(input, select, button) {
+      border-radius: var(--radius-medium);
+    }
+
+    fieldset.group > :is(input, select):not(:focus, :user-invalid, [aria-invalid="true"], :last-child) {
+      border-inline-end-color: var(--input);
+    }
+
+    select {
+      max-width: none;
+    }
+  }
+
+  #footer {
+    gap: var(--space-4);
+    margin-block: var(--space-4);
+  }
+
+  .packages {
+    min-width: 720px;
+  }
+}
+
+/* Show table rows as cards on small screens. */
+@media screen and (max-width: 600px) {
+  .header {
+    margin: var(--space-3) 0 0;
+    text-align: center;
+  }
+
+  .package-details-table {
+    padding: 0;
+
+    th, td {
+      padding: var(--space-3) var(--space-4);
+    }
+  }
+
+  .packages-wrap {
+    border: 0;
+  }
+
+  .packages {
+    display: block;
+    min-width: 0;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: block;
+    }
+
+    tbody tr {
+      display: grid;
+      gap: var(--space-3);
+      margin-block-end: var(--space-3);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-medium);
+      box-shadow: var(--shadow-small);
+    }
+
+    tbody tr:last-child {
+      margin-block-end: 0;
+    }
+
+    tbody th {
+      padding: var(--space-4) var(--space-4) var(--space-3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      display: grid;
+      grid-template-columns: minmax(7rem, auto) minmax(0, 1fr);
+      align-items: baseline;
+      gap: var(--space-3);
+      padding: 0 var(--space-4);
+      text-align: start;
+      white-space: normal;
+    }
+
+    tbody td:last-child {
+      padding-bottom: var(--space-4);
+    }
+
+    tbody td:first-child {
+      padding-top: var(--space-4);
+    }
+
+    tbody td.col-version {
+      background: var(--faint);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody th.col-package {
+      padding-top: 0;
+    }
+
+    tbody td::before {
+      color: var(--muted-foreground);
+    }
+
+    tbody td.col-version::before { content: "Version"; }
+    tbody td.col-license::before { content: "License"; }
+    tbody td.col-maintainer::before { content: "Maintainers"; }
+    tbody td.col-updated::before { content: "Updated"; }
+
+    tbody td.col-distro::before { content: "Distro"; }
+    tbody td.col-manager::before { content: "Pkg manager"; }
+    tbody td.col-packages::before { content: "Packages"; }
+    tbody td.col-maintainers::before { content: "Maintainers"; }
+
+    tbody td[colspan] {
+      display: block;
+      text-align: center;
+    }
+
+    .col-distro a {
+      display: inline-block;
+      margin-inline-end: var(--space-3);
+    }
+
+    .package-filters {
+      min-width: 0;
+    }
   }
 }

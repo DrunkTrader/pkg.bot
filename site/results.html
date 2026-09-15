@@ -44,8 +44,10 @@
           {%- for p in results.packages %}
           <tr>
             <td class="col-version">
-              {% if p.version %}<span class="package-version" title="{{ p.version }}">{{ p.version }}</span>{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
-              <span class="status">{{ p.status }}</span>
+              <span>
+                {% if p.version %}<span class="package-version" title="{{ p.version }}">{{ p.version }}</span>{% else %}<span class="text-light" aria-label="Version unavailable">—</span>{% endif %}
+                <span class="status">{{ p.status }}</span>
+              </span>
             </td>
             <th scope="row" class="col-package">
               <div class="package-heading hstack gap-2">
