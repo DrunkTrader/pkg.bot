@@ -1,4 +1,5 @@
-import { autocomp } from "./autocomp.js";
+import "@knadh/oat";
+import { autocomp } from "@knadh/autocomp";
 
 (() => {
   const savedRepo = (() => {

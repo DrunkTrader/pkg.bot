@@ -61,7 +61,7 @@ async fn serve_static(State(ctx): State<Arc<Ctx>>, Path(path): Path<String>) -> 
         return not_found;
     }
 
-    match tokio::fs::read(site.path.join("static").join(rel)).await {
+    match tokio::fs::read(site.path.join("dist").join(rel)).await {
         Ok(body) => (
             StatusCode::OK,
             [

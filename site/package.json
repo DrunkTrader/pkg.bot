@@ -1,0 +1,12 @@
+{
+  "name": "pkgs-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun ./build.mjs"
+  },
+  "dependencies": {
+    "@knadh/autocomp": "^1.2.0",
+    "@knadh/oat": "^0.8.0"
+  }
+}

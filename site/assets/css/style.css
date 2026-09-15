@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light dark;
   --container-max: 1200px;
   --primary: light-dark(#111, #fafafa);
   --radius-full: 4px;
@@ -8,6 +9,22 @@
 
 body {
   min-width: 320px;
+}
+
+@layer base {
+  a {
+    text-decoration: none;
+  }
+
+  :is(p, blockquote, figcaption) a {
+    text-decoration: underline;
+  }
+}
+
+@layer components {
+  a.badge:hover, a:hover .badge {
+    opacity: .8;
+  }
 }
 
 th, td {

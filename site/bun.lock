@@ -1,0 +1,18 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "pkgs-site",
+      "dependencies": {
+        "@knadh/autocomp": "^1.2.0",
+        "@knadh/oat": "^0.8.0",
+      },
+    },
+  },
+  "packages": {
+    "@knadh/autocomp": ["@knadh/autocomp@1.2.0", "", {}, "sha512-RnhmlWDhEXdCmkaRPRivvB8VBTLLMlF2r4BPeNDgqCqyYW6ELlK+WjsVebfFdLjqAgVOf9LoZbUUSETKmobKRA=="],
+
+    "@knadh/oat": ["@knadh/oat@0.8.0", "", {}, "sha512-vewzv6gLtYUtSE/GXfw7F4prdB29puXrDHvWGcqJkT2SxD6jev1co55LGSqu1gVReoB9ej5LZdceJO5bk2lRaQ=="],
+  }
+}
