@@ -3,6 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+    // Theme switcher. Put here instead of main.js to avoid white flash on page load.
+    (() => {
+      const root = document.documentElement;
+      const sys = matchMedia("(prefers-color-scheme: dark)");
+      let theme;
+      try { theme = localStorage.getItem("theme"); } catch {}
+      if (theme !== "light" && theme !== "dark") theme = null;
+
+      const applyTheme = () => {
+        root.dataset.theme = theme || (sys.matches ? "dark" : "light");
+        root.style.colorScheme = root.dataset.theme;
+      };
+      applyTheme();
+
+      sys.addEventListener("change", applyTheme);
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("#theme-toggle")) return;
+        theme = root.dataset.theme === "dark" ? "light" : "dark";
+        applyTheme();
+        try { localStorage.setItem("theme", theme); } catch {}
+      });
+    })();
+  </script>
 
   <title>{% block title %}pkg.bot - Fast Linux package search{% endblock %}</title>
   <meta name="description" content="{% block description %}Search packages across Linux distributions and package repositories.{% endblock %}" />
@@ -25,7 +49,10 @@
   <header class="header">
     <div class="row items-center">
       <div class="logo col-3">
-        <a href="{{ consts.root_url | safe }}/" class="unstyled"><img src="/static/logo.svg?v={{ asset_ver }}" alt="pkg.bot logo" /></a>
+        <a href="{{ consts.root_url | safe }}/" class="unstyled">
+          <img class="logo-light" src="/static/logo.svg?v={{ asset_ver }}" alt="pkg.bot logo" />
+          <img class="logo-dark" src="/static/logo-dark.svg?v={{ asset_ver }}" alt="pkg.bot logo" />
+        </a>
         <p class="tagline text-light">Fast Linux package search</p>
       </div>
 
@@ -43,6 +70,7 @@
     <a href="{{ consts.root_url | safe }}/p/about">About</a>
     <a href="https://github.com/knadh/pkg.bot"><svg class="icon icon-github" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#github"></use></svg> @knadh/pkg.bot</a>
     <span>Data from <a href="https://repology.org">Repology</a></span>
+    <button id="theme-toggle" type="button" class="ghost" aria-label="Toggle light/dark mode" title="Toggle light/dark mode"><svg class="icon" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#sun"></use></svg></button>
   </footer>
 
 </div><!-- container -->

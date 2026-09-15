@@ -40,7 +40,6 @@ await mkdir(dist, { recursive: true });
 const result = await Bun.build({
   entrypoints: [
     path.join(root, "assets/js/main.js"),
-    path.join(root, "assets/css/style.css"),
   ],
   outdir: dist,
   naming: "bundle.[ext]",
@@ -54,9 +53,15 @@ if (!result.success) {
   throw new AggregateError(result.logs, "site build failed");
 }
 
+// Copy CSS without minification. bun messes up 'light-dark()` compatibility somehow.
+// It's a small file, so it's okay to not minify for now.
+await cp(path.join(root, "assets/css/style.css"), path.join(dist, "bundle.css"));
+
+// Copy all other assets.
 await cp(path.join(root, "assets/static"), dist, { recursive: true });
 await buildIcons();
+
 // Manually vendor oat.
 await cp(path.join(root, "node_modules/@knadh/oat/oat.min.css"), path.join(dist, "oat.min.css"));
 await cp(path.join(root, "node_modules/@knadh/oat/oat.min.js"), path.join(dist, "oat.min.js"));
-console.log(`built ${result.outputs.length} bundles and copied static assets -> dist/`);
+console.log(`built ${result.outputs.length} bundles and copied CSS and static assets -> dist/`);

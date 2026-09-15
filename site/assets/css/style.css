@@ -1,10 +1,11 @@
 :root {
   color-scheme: light dark;
   --container-max: 1200px;
-  --primary: light-dark(#111, #fafafa);
+  --primary: light-dark(#111, #d0d6e0);
   --radius-full: 4px;
   --radius-medium: 4px;
-  --input: light-dark(#999, #333);
+  --input: light-dark(#999, #777);
+  --foreground: light-dark(#09090b, #d0d6e0);
 }
 
 body {
@@ -46,7 +47,7 @@ thead th {
 
 /* The feed icon keeps its brand orange instead of inheriting currentColor. */
 .icon-rss {
-  color: #f26522;
+  color: light-dark(#f26522, #ff914d);
 }
 
 .feed-link {
@@ -67,6 +68,20 @@ thead th {
   max-height: 3.5rem;
 }
 
+.logo-dark { display: none; }
+
+:root[data-theme="dark"] {
+  .logo-light { display: none; }
+  .logo-dark { display: inline; }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    .logo-light { display: none; }
+    .logo-dark { display: inline; }
+  }
+}
+
 /* Footer */
 #footer {
   display: flex;
@@ -82,6 +97,10 @@ thead th {
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
+  }
+
+  #theme-toggle {
+    padding: var(--space-1) var(--space-2);
   }
 }
 
@@ -102,6 +121,10 @@ thead th {
 
 .advanced-search {
   max-width: 720px;
+
+  input[type="reset"] {
+    width: auto;
+  }
 }
 
 /* Autocomplete (autocomp.js). */
@@ -215,7 +238,7 @@ body.index {
   height: 0.85em;
   border-radius: var(--radius-full);
   vertical-align: baseline;
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
+  box-shadow: inset 0 0 0 1px light-dark(rgb(0 0 0 / 0.15), rgb(255 255 255 / 0.15));
 }
 
 .packages-wrap {
@@ -254,7 +277,7 @@ body.index {
   }
 
   tbody tr:focus-within {
-    background: rgb(from var(--muted) r g b / .5);
+    background: light-dark(rgb(from var(--muted) r g b / .5), rgb(from var(--muted) r g b / .5));
   }
 
   tbody th {
