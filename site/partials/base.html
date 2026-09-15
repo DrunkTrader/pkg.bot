@@ -3,6 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}pkg.bot - Fast Linux package search{% endblock %}</title>
+  <meta name="description" content="{% block description %}Search packages across Linux distributions and package repositories.{% endblock %}" />
+
+  <meta property="og:title" content="pkg.bot - Fast Linux package search" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="{{ consts.root_url }}/" />
+  <meta property="og:image" content="{{ consts.root_url }}/static/thumb.png" />
+
   <script>
     // Theme switcher. Put here instead of main.js to avoid white flash on page load.
     (() => {
@@ -27,14 +35,6 @@
       });
     })();
   </script>
-
-  <title>{% block title %}pkg.bot - Fast Linux package search{% endblock %}</title>
-  <meta name="description" content="{% block description %}Search packages across Linux distributions and package repositories.{% endblock %}" />
-
-  <meta property="og:title" content="pkg.bot - Fast Linux package search" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="{{ consts.root_url }}/" />
-  <meta property="og:image" content="{{ consts.root_url }}/static/thumb.png" />
 
   <link rel="icon" href="/static/favicon.svg?v={{ asset_ver }}" type="image/svg+xml" />
   {%- if feed_url is defined %}
