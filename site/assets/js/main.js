@@ -2,6 +2,12 @@ import "@knadh/oat";
 import { autocomp } from "@knadh/autocomp";
 
 (() => {
+  document.querySelectorAll("[data-copy-content]").forEach((el) => {
+    el.addEventListener("click", () => {
+      navigator.clipboard.writeText(el.dataset.copyContent).catch(console.error);
+    });
+  });
+
   const savedRepo = (() => {
     const value = localStorage.getItem("repo");
     if (!value) return null;

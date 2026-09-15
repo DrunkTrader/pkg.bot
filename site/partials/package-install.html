@@ -2,61 +2,86 @@
 {%- if not install_name -%}
   {%- set install_name = pkg.name -%}
 {%- endif -%}
+{%- set install_command = "" %}
+{%- set install_old = "" %}
+{%- set install_note = "" %}
+{%- if repo.manager == "nix" %}
+  {%- set install_command = "nix-shell -p " ~ install_name %}
+{%- elif repo.manager == "pacman" %}
+  {%- set install_command = "pacman -S " ~ install_name %}
+{%- elif repo.manager == "aur" %}
+  {%- set aur_base = pkg.pkg_base | default(value=install_name) %}
+  {%- if not aur_base %}
+    {%- set aur_base = install_name %}
+  {%- endif %}
+  {%- set install_command = "git clone https://aur.archlinux.org/" ~ aur_base ~ ".git
+cd " ~ aur_base ~ "
+makepkg -si" %}
+{%- elif repo.manager == "apt" %}
+  {%- set install_command = "apt install " ~ install_name %}
+{%- elif repo.manager == "apk" %}
+  {%- set install_command = "apk add " ~ install_name %}
+{%- elif repo.manager == "dnf" or repo.manager == "openmandriva" %}
+  {%- set install_command = "dnf install " ~ install_name %}
+{%- elif repo.manager == "yum" %}
+  {%- set install_command = "yum install " ~ install_name %}
+{%- elif repo.manager == "zypper" %}
+  {%- set install_command = "zypper install " ~ install_name %}
+{%- elif repo.manager == "portage" %}
+  {%- set install_command = "emerge --ask " ~ install_name %}
+{%- elif repo.manager == "pkg" %}
+  {%- set install_command = "pkg install " ~ install_name %}
+{%- elif repo.manager == "mageia" %}
+  {%- set install_command = "urpmi " ~ install_name %}
+{%- elif repo.manager == "openwrt" %}
+  {# OpenWrt package identifiers are source paths; use an emitted binary package name. #}
+  {%- set openwrt_name = pkg.name %}
+  {%- if pkg.binary_names is defined and pkg.binary_names | length > 0 %}
+    {%- set openwrt_name = pkg.binary_names | first %}
+  {%- endif %}
+  {%- set install_command = "apk add " ~ openwrt_name %}
+  {%- set install_old = "opkg install " ~ openwrt_name %}
+{%- elif repo.manager == "void" %}
+  {%- set install_command = "xbps-install " ~ install_name %}
+{%- elif repo.manager == "solus" %}
+  {%- set install_command = "eopkg install " ~ install_name %}
+{%- elif repo.manager == "slackware" %}
+  {%- set install_command = "slackpkg install " ~ install_name %}
+{%- elif repo.manager == "slackbuilds" %}
+  {%- set install_note = "With sbopkg installed:" %}
+  {%- set slackbuild_name = install_name | split(pat="/") | last %}
+  {%- set install_command = "sbopkg -i " ~ slackbuild_name %}
+{%- elif repo.manager == "openbsd" %}
+  {%- set install_note = "With the matching OpenBSD ports tree installed:" %}
+  {%- set install_command = "make -C /usr/ports/" ~ install_name ~ " install" %}
+{%- elif repo.manager == "macports" %}
+  {%- set install_command = "sudo port install " ~ install_name %}
+{%- else %}
+  {%- set install_note = "See the repository’s installation instructions for this package." %}
+{%- endif %}
+{%- set copy_content = install_command %}
+{%- if install_old %}
+  {%- set copy_content = install_command ~ "
+" ~ install_old %}
+{%- endif %}
 <section class="card package-install mt-6" aria-label="Install">
-  <h4>Install</h4>
-  {%- if repo.manager == "nix" %}
-    <pre><code>nix-shell -p {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "pacman" %}
-    <pre><code>pacman -S {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "aur" %}
-    {%- set aur_base = pkg.pkg_base | default(value=install_name) %}
-    {%- if not aur_base %}
-      {%- set aur_base = install_name %}
+  <div class="hstack justify-between">
+    <h4>Install</h4>
+    {%- if install_command %}
+      <button type="button" class="outline small" data-copy-content="{{ copy_content }}">Copy</button>
     {%- endif %}
-    <pre><code>git clone https://aur.archlinux.org/{{ aur_base }}.git{{ "\n" -}}
-      cd {{ aur_base }}{{ "\n" -}}
-      makepkg -si</code></pre>
-  {%- elif repo.manager == "apt" %}
-    <pre><code>apt install {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "apk" %}
-    <pre><code>apk add {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "dnf" or repo.manager == "openmandriva" %}
-    <pre><code>dnf install {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "yum" %}
-    <pre><code>yum install {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "zypper" %}
-    <pre><code>zypper install {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "portage" %}
-    <pre><code>emerge --ask {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "pkg" %}
-    <pre><code>pkg install {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "mageia" %}
-    <pre><code>urpmi {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "openwrt" %}
-    {# OpenWrt package identifiers are source paths; use an emitted binary package name. #}
-    {%- set openwrt_name = pkg.name %}
-    {%- if pkg.binary_names is defined and pkg.binary_names | length > 0 %}
-      {%- set openwrt_name = pkg.binary_names | first %}
-    {%- endif %}
+  </div>
+  {%- if install_note %}
+    <p class="text-light">{{ install_note }}</p>
+  {%- endif %}
+  {%- if install_old %}
     <p class="text-light">OpenWrt 25.12 and newer:</p>
-    <pre><code>apk add {{ openwrt_name -}}</code></pre>
+  {%- endif %}
+  {%- if install_command %}
+    <pre><code>{{ install_command }}</code></pre>
+  {%- endif %}
+  {%- if install_old %}
     <p class="text-light mt-2">OpenWrt 24.10 and older:</p>
-    <pre><code>opkg install {{ openwrt_name -}}</code></pre>
-  {%- elif repo.manager == "void" %}
-    <pre><code>xbps-install {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "solus" %}
-    <pre><code>eopkg install {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "slackware" %}
-    <pre><code>slackpkg install {{ install_name -}}</code></pre>
-  {%- elif repo.manager == "slackbuilds" %}
-    <p class="text-light">With sbopkg installed:</p>
-    <pre><code>sbopkg -i {{ install_name | split(pat="/") | last -}}</code></pre>
-  {%- elif repo.manager == "openbsd" %}
-    <p class="text-light">With the matching OpenBSD ports tree installed:</p>
-    <pre><code>make -C /usr/ports/{{ install_name }} install</code></pre>
-  {%- elif repo.manager == "macports" %}
-    <pre><code>sudo port install {{ install_name -}}</code></pre>
-  {%- else %}
-    <p class="text-light">See the repository’s installation instructions for this package.</p>
+    <pre><code>{{ install_old }}</code></pre>
   {%- endif %}
 </section>
