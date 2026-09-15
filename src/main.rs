@@ -8,6 +8,7 @@ mod importer;
 mod init;
 mod manager;
 mod models;
+mod repology;
 
 // Use mimalloc for musl builds (musl's default malloc is very slow).
 #[cfg(target_env = "musl")]
@@ -35,6 +36,14 @@ async fn main() {
     // Handle CLI flags.
     if let Some(cmd) = cli.command {
         match cmd {
+            Commands::RestoreRepology { pg } => {
+                if let Err(e) = repology::run(&pg).await {
+                    log::error!("repology restore failed: {e}");
+                    std::process::exit(1);
+                }
+                return;
+            }
+
             // Import Repology PG dump into a new SQLite db.
             Commands::Import { pg } => {
                 let config = config::load_all(&cli.config);

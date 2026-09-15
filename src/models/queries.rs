@@ -3,6 +3,7 @@ use yesqlr_macros::ScanQueries;
 
 const SQL_SCHEMA: &[u8] = include_bytes!("../../static/sql/schema.sql");
 const SQL_QUERIES: &[u8] = include_bytes!("../../static/sql/queries.sql");
+const SQL_REPOLOGY: &[u8] = include_bytes!("../../static/sql/repology.sql");
 const SQL_IMPORT: &[u8] = include_bytes!("../../static/sql/import.sql");
 
 /// Parsed SQL schema.
@@ -10,6 +11,21 @@ const SQL_IMPORT: &[u8] = include_bytes!("../../static/sql/import.sql");
 pub struct Schema {
     pub pragma: yesqlr::Query,
     pub schema: yesqlr::Query,
+}
+
+/// Parsed SQL queries for the Repology restore.
+#[derive(Default, ScanQueries)]
+pub struct Repology {
+    #[name = "set-timeouts"]
+    pub set_timeouts: yesqlr::Query,
+
+    pub schema: yesqlr::Query,
+
+    #[name = "get-columns"]
+    pub get_columns: yesqlr::Query,
+
+    #[name = "create-indexes"]
+    pub create_indexes: yesqlr::Query,
 }
 
 /// Parsed SQL queries for the `import` command.
@@ -93,6 +109,11 @@ pub struct Listing {
 pub static SCHEMA: LazyLock<Schema> = LazyLock::new(|| {
     let result = yesqlr::parse(SQL_SCHEMA).expect("error parsing schema.sql");
     Schema::try_from(result).expect("error reading SQL schema")
+});
+
+pub static REPOLOGY: LazyLock<Repology> = LazyLock::new(|| {
+    let result = yesqlr::parse(SQL_REPOLOGY).expect("error parsing repology.sql");
+    Repology::try_from(result).expect("error reading SQL repology queries")
 });
 
 pub static IMPORT: LazyLock<Import> = LazyLock::new(|| {

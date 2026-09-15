@@ -25,6 +25,12 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Restore only the required tables form Repology SQL dump streamed to stdin.
+    RestoreRepology {
+        #[arg(long, default_value = "postgres://repology@127.0.0.1:55432/repology")]
+        pg: String,
+    },
+
     /// Import Repology PG dump into a new SQLite database.
     Import {
         #[arg(long, default_value = "postgres://repology@127.0.0.1:55432/repology")]

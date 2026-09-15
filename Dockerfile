@@ -2,6 +2,9 @@
 # shipped with the stock postgres image, so build it here.
 FROM postgres:17
 
+RUN printf '%s\n' 'CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;' \
+    > /docker-entrypoint-initdb.d/01-extensions.sql
+
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
