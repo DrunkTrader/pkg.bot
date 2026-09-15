@@ -50,7 +50,7 @@
             <th scope="row" class="col-package">
               <div class="package-heading hstack gap-2">
                 <a class="package-name" href="{{ consts.root_url | safe }}/repos/{{ repo.slug }}/{{ p.slug | urlencode }}">{{ p.name }}</a>
-                {% if package_urls[p.slug] is defined %}<a class="text-light" href="{{ package_urls[p.slug] }}" rel="noreferrer noopener" aria-label="View {{ p.name }} on {{ repo.name }}" title="View on {{ repo.name }}"><span class="icon icon-external-link" aria-hidden="true"></span></a>{% endif %}
+                {% if package_urls[p.slug] is defined %}<a class="text-light" href="{{ package_urls[p.slug] }}" rel="noreferrer noopener" aria-label="View {{ p.name }} on {{ repo.name }}" title="View on {{ repo.name }}"><svg class="icon icon-external-link" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#external-link"></use></svg></a>{% endif %}
               </div>
               {% if p.slug != p.name %}<p class="slug"><code><small>{{ p.slug }}</small></code></p>{% endif %}
               {% if p.excerpt or p.description %}
@@ -82,7 +82,7 @@
             <td class="package-filters col-maintainer">
               <div class="maintainers vstack gap-1">
               {%- for m in p.maintainers | slice(end=2) %}
-                <a href="{{ add_url.maintainer | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer"><span class="icon icon-avatar" aria-hidden="true"></span><span class="maintainer-name">{{ m.name | default(value=m.handle) }}</span></a>
+                <a href="{{ add_url.maintainer | safe }}maintainer={{ m.slug | urlencode }}" title="Filter by maintainer"><svg class="icon icon-avatar" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#avatar"></use></svg><span class="maintainer-name">{{ m.name | default(value=m.handle) }}</span></a>
               {%- else %}<span class="text-light" aria-label="Maintainer unavailable">—</span>
               {%- endfor %}
               </div>

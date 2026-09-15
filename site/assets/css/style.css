@@ -40,23 +40,13 @@ thead th {
   width: 1.1em;
   height: 1.1em;
   vertical-align: middle;
-  background-color: currentColor;
-  mask: var(--icon) center / contain no-repeat;
-
-  &.icon-search { --icon: url("/static/search.svg"); }
-  &.icon-avatar { --icon: url("/static/avatar.svg"); }
-  &.icon-globe { --icon: url("/static/globe.svg"); }
-  &.icon-external-link { --icon: url("/static/external-link.svg"); }
-  &.icon-code { --icon: url("/static/code.svg"); }
-  &.icon-package { --icon: url("/static/package.svg"); }
-  &.icon-github { --icon: url("/static/github.svg"); }
+  fill: currentColor;
 }
 
 
 /* The feed icon keeps its brand orange instead of inheriting currentColor. */
 .icon-rss {
-  --icon: url("/static/rss.svg");
-  background-color: #f26522;
+  color: #f26522;
 }
 
 .feed-link {

@@ -52,7 +52,7 @@
             </div>
             <p class="repo-links hstack">
               {{ r.slug }}
-              {%- if r.homepage_url %}<a href="{{ r.homepage_url }}" rel="noreferrer noopener" title="Homepage"><span class="icon icon-external-link" aria-hidden="true"></span></a>{% endif %}
+              {%- if r.homepage_url %}<a href="{{ r.homepage_url }}" rel="noreferrer noopener" title="Homepage"><svg class="icon icon-external-link" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#external-link"></use></svg></a>{% endif %}
             </p>
           </th>
           <td class="col-distro">

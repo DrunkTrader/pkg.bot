@@ -105,7 +105,7 @@
             <td>
               <div class="vstack gap-1 maintainers">
                 {%- for m in pkg.maintainers %}
-                <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}"><span class="icon icon-avatar" aria-hidden="true"></span><span>{{ m.name | default(value=m.handle) }}</span></a>
+                <a href="{{ filter_url | safe }}maintainer={{ m.slug | urlencode }}"><svg class="icon icon-avatar" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#avatar"></use></svg><span>{{ m.name | default(value=m.handle) }}</span></a>
                 {%- endfor %}
               </div>
             </td>
@@ -144,9 +144,9 @@
     </div>
     <div class="col-4 package-actions">
       <nav class="vstack" aria-label="Package links">
-        {% if pkg_url is defined %}<a class="button" data-variant="primary" href="{{ pkg_url }}" rel="noreferrer noopener"><span class="icon icon-package" aria-hidden="true"></span>View on {{ repo.name }}</a>{% endif %}
-        {% if pkg.homepage_url %}<a class="button" data-variant="secondary" href="{{ pkg.homepage_url }}" title="{{ pkg.homepage_url }}" rel="noreferrer noopener"><span class="icon icon-globe" aria-hidden="true"></span><span class="package-link-url">{{ pkg.homepage_url | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_end_matches(pat="/") }}</span></a>{% endif %}
-        {% if source_url is defined %}<a class="button" data-variant="secondary" href="{{ source_url }}" title="{{ source_url }}" rel="noreferrer noopener"><span class="icon icon-code" aria-hidden="true"></span><span class="package-link-url">{{ source_url | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_end_matches(pat="/") }}</span></a>{% endif %}
+        {% if pkg_url is defined %}<a class="button" data-variant="primary" href="{{ pkg_url }}" rel="noreferrer noopener"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#package"></use></svg>View on {{ repo.name }}</a>{% endif %}
+        {% if pkg.homepage_url %}<a class="button" data-variant="secondary" href="{{ pkg.homepage_url }}" title="{{ pkg.homepage_url }}" rel="noreferrer noopener"><svg class="icon icon-globe" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#globe"></use></svg><span class="package-link-url">{{ pkg.homepage_url | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_end_matches(pat="/") }}</span></a>{% endif %}
+        {% if source_url is defined %}<a class="button" data-variant="secondary" href="{{ source_url }}" title="{{ source_url }}" rel="noreferrer noopener"><svg class="icon icon-code" aria-hidden="true" focusable="false"><use href="/static/icons.svg?v={{ asset_ver }}#code"></use></svg><span class="package-link-url">{{ source_url | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_end_matches(pat="/") }}</span></a>{% endif %}
       </nav>
       {% include "partials/package-install.html" %}
     </div>
