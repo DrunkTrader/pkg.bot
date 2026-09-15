@@ -136,7 +136,6 @@ pub async fn run(dsn: &str, db_path: &Path, conf: &ImportConfig) -> Result<()> {
         "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY",
         "SET statement_timeout = 0",
         "SET idle_in_transaction_session_timeout = 0",
-        "SET work_mem = '512MB'",
     ] {
         pg.execute(stmt).await?;
     }
