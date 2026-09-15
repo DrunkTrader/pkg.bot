@@ -453,6 +453,21 @@ code {
     text-align: center;
   }
 
+  /* Reorder the layout and Put the upstream links above the info table */
+  .package-overview .package-actions {
+    display: contents;
+
+    > nav {
+      grid-column: 1 / -1;
+      order: -1;
+    }
+
+    .package-install {
+      grid-column: 1 / -1;
+      margin-block-start: 0;
+    }
+  }
+
   .package-details-table {
     padding: 0;
 
