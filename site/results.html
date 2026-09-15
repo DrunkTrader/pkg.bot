@@ -2,7 +2,7 @@
 
 {% block title %}{% if term %}{{ term }} &middot; {% endif %}{{ repo.name }} packages &mdash; pkg.bot{% endblock %}
 {% block description %}{% if term %}Packages matching &quot;{{ term }}&quot; in {{ repo.name }}.{% else %}{{ results.total }}{% if results.total_capped %}+{% endif %} package{{ results.total | pluralize }}{% if term %} matching &quot;{{ term }}&quot;{% endif %} in {{ repo.name }}.{% endif %}{% endblock %}
-{% block feed_title %}{% if term %}{{ term }} · {% endif %}{{ repo.name }} packages — pkgbot{% endblock %}
+{% block feed_title %}{% if term %}{{ term }} · {% endif %}{{ repo.name }} packages — pkg.bot{% endblock %}
 
 {% block content %}
 <section class="results">

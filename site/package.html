@@ -2,7 +2,7 @@
 
 {% block title %}{{ pkg.name }} {{ pkg.version }} &middot; {{ repo.name }} &mdash; pkgs{% endblock %}
 {% block description %}{{ pkg.excerpt | default(value=pkg.name) }} &mdash; {{ pkg.name }} {{ pkg.version }} in {{ repo.name }}.{% endblock %}
-{% block feed_title %}{{ pkg.name }} · {{ repo.name }} — pkgbot{% endblock %}
+{% block feed_title %}{{ pkg.name }} · {{ repo.name }} — pkg.bot{% endblock %}
 
 {% block content %}
 {# Every value interpolated into it is URL encoded, so it is output unescaped. #}
