@@ -3,7 +3,7 @@
 {% block title %}About - pkg.bot{% endblock %}
 
 {% block content %}
-<section class="content page about">
+<article class="content page about">
   <h1>About</h1>
   <p>pkg.bot is a fast search engine for Linux packages across distributions and package repositories.
      It uses the package data dump from <a href="https://repology.org">Repology</a> and is updated once a week.
@@ -29,5 +29,57 @@
     <li>Filter on recency, eg: <code>version > 2.0</code> and <code>updated > 2026-01-01</code></li>
     <li>RSS feeds for search, filtering, and individual packages</li>
   </ul>
-</section>
+
+  <hr />
+
+  <h3>API</h3>
+  <p>API endpoints return JSON. Use repository and package slugs from their page URLs.</p>
+  <table aria-label="API endpoints">
+    <thead>
+      <tr>
+        <th scope="col">URL</th>
+        <th scope="col">Description</th>
+        <th scope="col">Query params</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/api/repos</code></td>
+        <td>List of all repositories</td>
+        <td>
+          <ul>
+            <li><code><strong>family</strong></code>: Filter by repository family. Eg: <code></code>nix</code>, <code>debuntu</code>, <code>arch</code></li>
+            <li><code><strong>distro</strong></code>: Filter by distro. Eg: <code>fedora</code></li>
+            <li><code><strong>manager</strong></code>: Filter by package manager</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td><code>/api/repos/{repo}</code></td>
+        <td>Details of a repository</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><code>/api/repos/{repo}/packages</code></td>
+        <td>List, search, and filter packages in a repository</td>
+        <td>
+          <ul>
+            <li><code><strong>q</strong></code>: String query for fulltext name+description+keyword search</li>
+            <li><code><strong>name</strong></code>: Search package names and slugs only. Either use this or <code>q</code> but not both</li>
+            <li><code><strong>license</strong></code>, <code>tag</code>, <code>maintainer</code>, <code>group</code>, <code>platform</code></li>
+            <li><code><strong>status</strong></code>: <code>newest|outdated|ignored|unique|devel|legacy|incorrect|untrusted|noscheme|rolling|unprocessed</code>. These are from <a href="https://repology.org">Repology</a>.</li>
+            <li><code><strong>is_nonfree</strong></code>: <code>true</code> or <code>false</code></li>
+            <li><code><strong>version</strong></code>: Match a version (<code>x</code>, <code>x.y</code>, or <code>x.y.z</code>). Supports optional prefixes <code>&gt;</code> or <code>&lt;</code></li>
+            <li><code><strong>updated_at</strong></code>: Match updated date (<code>YYYY-MM-DD</code>). Supports optional prefixes <code>&gt;</code> or <code>&lt;</code></li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td><code>/api/repos/{repo}/{pkg}</code></td>
+        <td>Details of a package</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</article>
 {% endblock %}
