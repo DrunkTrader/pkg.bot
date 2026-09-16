@@ -29,6 +29,11 @@ The search engine is a statically compiled Rust program which uses a single SQLi
 - `./pkgbot install` to generate a new SQLite DB (`data.db` by default)
 - `./pkgbot --site=./site` to run the web search engine. `./site` is the theme directory cloned from this repo.
 
+### API
+
+See [API docs](https://pkg.bot/p/about).
+
+
 ### Importing data from repology
 
 Download the latest `.sql.zst` dump from `https://dumps.repology.org`, then restore it into a fresh Postgres database:

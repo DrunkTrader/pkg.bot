@@ -33,7 +33,7 @@
   <hr />
 
   <h3>API</h3>
-  <p>API endpoints return JSON. Use repository and package slugs from their page URLs.</p>
+  <p>API endpoints return JSON by default. Use repository and package slugs from their page URLs.</p>
   <table aria-label="API endpoints">
     <thead>
       <tr>
@@ -81,5 +81,14 @@
       </tr>
     </tbody>
   </table>
+
+  <hr />
+
+  <h3>LLMs</h3>
+  <p>All API endpoints support pipe-separated CSV output easily ingestible by LLMs (and for formatting and directly displaying results on the terminal).
+    Send <code>Accept: text/csv</code> to get a header row followed by the result rows.</p>
+  <pre><code>curl -fsS -H "Accept: text/csv" https://pkg.bot/api/repos</code></pre>
+  <p>Piping it to <code>column</code> produces neatly formatted tabular output.</p>
+  <pre><code>curl -fsS -H "Accept: text/csv" https://pkg.bot/api/repos | column -t -s "|"</code></pre>
 </article>
 {% endblock %}

@@ -1,5 +1,8 @@
 pub mod api;
+mod format;
 pub mod site;
+
+pub use format::{respond, ApiFormat};
 
 use std::{path::PathBuf, sync::Arc, time::Instant};
 

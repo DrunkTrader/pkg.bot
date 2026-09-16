@@ -13,7 +13,7 @@ use crate::handlers::{api, site, Ctx, ReqStarted};
 
 /// Initialize HTTP routes.
 pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
-    // JSON API.
+    // JSON  and pipe-separated CSV APIs.
     let mut router = Router::new()
         .route("/api/repos", get(api::get_repos))
         .route("/api/repos/{repo}", get(api::get_repo))
@@ -39,7 +39,7 @@ pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
                 .layer(middleware::from_fn(req_time)),
         );
     } else {
-        log::info!("no --site given. serving JSON APIs only");
+        log::info!("no --site given. serving APIs only");
     }
 
     router.with_state(ctx)

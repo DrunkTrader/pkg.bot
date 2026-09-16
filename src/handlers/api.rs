@@ -3,11 +3,12 @@ use std::sync::Arc;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
+    response::Response,
 };
 use axum_extra::extract::Query;
 use serde::Deserialize;
 
-use super::{json, paginate, ApiErr, ApiResp, Ctx, Result};
+use super::{paginate, respond, ApiErr, ApiFormat, Ctx, Result};
 use crate::{
     manager::Error,
     models::{Cursor, Package, PackageQuery, PackageResults, Repo, RepoQuery, Sort},
@@ -27,17 +28,19 @@ pub struct SuggestQuery {
 pub async fn get_repos(
     State(ctx): State<Arc<Ctx>>,
     Query(filter): Query<RepoQuery>,
-) -> Result<ApiResp<Vec<Repo>>> {
+    format: ApiFormat,
+) -> Result<Response> {
     let repos = ctx.mgr.get_repos(&Sort::asc("name"), &filter).await?;
-    Ok(json(repos))
+    respond(format, repos)
 }
 
 /// Get a repository by its slug.
 pub async fn get_repo(
     State(ctx): State<Arc<Ctx>>,
     Path(repo_slug): Path<String>,
-) -> Result<ApiResp<Repo>> {
-    Ok(json(get_repo_by_slug(&ctx, &repo_slug).await?))
+    format: ApiFormat,
+) -> Result<Response> {
+    respond(format, get_repo_by_slug(&ctx, &repo_slug).await?)
 }
 
 /// Search packages in a repository.
@@ -45,41 +48,62 @@ pub async fn query_packages(
     State(ctx): State<Arc<Ctx>>,
     Path(repo_slug): Path<String>,
     Query(mut q): Query<PackageQuery>,
-) -> Result<ApiResp<PackageResults>> {
-    let (_, results) = search_packages(
-        &ctx,
-        &repo_slug,
-        &mut q,
+    format: ApiFormat,
+) -> Result<Response> {
+    let repo = get_repo_by_slug(&ctx, &repo_slug).await?;
+    q.validate()
+        .map_err(|e| ApiErr::new(e, StatusCode::BAD_REQUEST))?;
+
+    // API queries only expose the first batch and don't offer pagination.
+    let (page, limit, offset) = paginate(
+        1,
+        q.per_page,
         ctx.consts.api_max_per_page,
         ctx.consts.api_default_per_page,
-    )
-    .await?;
-    Ok(json(results))
+    );
+    q.repo_id = repo.id;
+    q.page = page;
+    q.per_page = limit;
+    q.limit = limit;
+    q.offset = offset;
+    q.after.clear();
+    q.before.clear();
+
+    let (packages, _) = if q.search().0.is_empty() {
+        ctx.mgr.get_packages(&q).await?
+    } else {
+        ctx.mgr.search_packages(&q).await?
+    };
+
+    respond(format, packages)
 }
 
 /// Get a package.
 pub async fn get_package(
     State(ctx): State<Arc<Ctx>>,
     Path((repo_slug, pkg_slug)): Path<(String, String)>,
-) -> Result<ApiResp<Package>> {
+    format: ApiFormat,
+) -> Result<Response> {
     let (_, package) = get_package_by_slug(&ctx, &repo_slug, &pkg_slug).await?;
-    Ok(json(package))
+    respond(format, package)
 }
 
 /// Suggest license values.
 pub async fn suggest_licenses(
     State(ctx): State<Arc<Ctx>>,
     Query(q): Query<SuggestQuery>,
-) -> Result<ApiResp<Vec<String>>> {
-    Ok(json(ctx.licenses.query(&q.q, LIMIT)))
+    format: ApiFormat,
+) -> Result<Response> {
+    respond(format, ctx.licenses.query(&q.q, LIMIT))
 }
 
 /// Suggest platform values.
 pub async fn suggest_platforms(
     State(ctx): State<Arc<Ctx>>,
     Query(q): Query<SuggestQuery>,
-) -> Result<ApiResp<Vec<String>>> {
-    Ok(json(ctx.platforms.query(&q.q, LIMIT)))
+    format: ApiFormat,
+) -> Result<Response> {
+    respond(format, ctx.platforms.query(&q.q, LIMIT))
 }
 
 /// Fetch a page of packages.
