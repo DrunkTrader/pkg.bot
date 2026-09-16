@@ -4,12 +4,17 @@ mod licenses;
 
 use crate::models::normalize_version;
 
-use std::{collections::HashMap, error::Error, path::Path, time::Instant};
+use std::{
+    collections::HashMap,
+    error::Error,
+    path::Path,
+    time::{Duration, Instant},
+};
 
 use serde_json::json;
 use sqlx::{
-    sqlite::SqliteConnectOptions, Connection, Executor, PgConnection, QueryBuilder, Sqlite,
-    SqliteConnection,
+    sqlite::SqliteConnectOptions, ConnectOptions, Connection, Executor, PgConnection, QueryBuilder,
+    Sqlite, SqliteConnection,
 };
 use tokio::sync::mpsc;
 
@@ -196,7 +201,8 @@ async fn exec(db: &mut SqliteConnection, label: &str, sql: &str) -> Result<()> {
 async fn init_db(path: &Path) -> Result<SqliteConnection> {
     let opts = SqliteConnectOptions::new()
         .filename(path)
-        .create_if_missing(true);
+        .create_if_missing(true)
+        .log_slow_statements(log::LevelFilter::Warn, Duration::from_secs(10));
     let mut db = SqliteConnection::connect_with(&opts).await?;
 
     db.execute(IMPORT.set_pragmas.query.as_str()).await?;
