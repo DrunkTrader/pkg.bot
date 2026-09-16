@@ -85,6 +85,20 @@
   </section>
 
   <section>
+    <h3>CLI</h3>
+    <p>Search Linux packages from the terminal with a super simple Bash script</p>
+    <pre><code># Download the script and put it in your PATH
+sudo wget -O /usr/local/bin/pkgbot <a href="https://github.com/knadh/pkg.bot/raw/refs/heads/master/scripts/pkgbot.sh">https://github.com/knadh/pkg.bot/raw/refs/heads/master/scripts/pkgbot.sh</a>
+
+# Make executable
+sudo chmod 755 /usr/local/bin/pkgbot
+
+# Run!
+pkgbot repos
+pkgbot fedora_44 jq</code></pre>
+  </section>
+
+  <section>
     <h3>LLMs</h3>
     <p>All API endpoints support pipe-separated CSV output easily ingestible by LLMs (and for formatting and directly displaying results on the terminal).
       Send <code>Accept: text/csv</code> to get a header row followed by the result rows.</p>
