@@ -35,11 +35,11 @@ impl CsvColumns for Package {
         "package",
         "version",
         "status",
-        "excerpt",
-        "licenses",
-        "maintainers",
         "updated_at",
         "homepage_url",
+        "licenses",
+        "maintainers",
+        "excerpt",
     ];
 }
 
