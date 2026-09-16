@@ -1,3 +1,8 @@
+-- name: get-repo
+SELECT * FROM repos
+WHERE id = CASE WHEN ?1 IS NOT NULL THEN ?1
+                ELSE (SELECT id FROM repos WHERE slug = ?2) END;
+
 -- name: get-repos
 -- {ORDER_BY}, {ORDER} are substited as literals.
 SELECT * FROM repos

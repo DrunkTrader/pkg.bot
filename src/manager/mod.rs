@@ -22,6 +22,16 @@ impl Manager {
         Self { db }
     }
 
+    /// Get a repo by its ID or slug.
+    pub async fn get_repo(&self, id: Option<i64>, slug: Option<&str>) -> Result<Repo, Error> {
+        sqlx::query_as(&Q.get_repo.query)
+            .bind(id)
+            .bind(slug)
+            .fetch_optional(&self.db)
+            .await?
+            .ok_or(Error::NotFound)
+    }
+
     pub async fn get_repos(&self, sort: &Sort, filter: &RepoQuery) -> Result<Vec<Repo>, Error> {
         // Optional sort.
         let sql = Q

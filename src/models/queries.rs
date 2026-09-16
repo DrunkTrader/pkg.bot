@@ -62,6 +62,9 @@ pub struct Import {
 /// Parsed SQL queries.
 #[derive(Default, ScanQueries)]
 pub struct Queries {
+    #[name = "get-repo"]
+    pub get_repo: yesqlr::Query,
+
     #[name = "get-repos"]
     pub get_repos: yesqlr::Query,
 

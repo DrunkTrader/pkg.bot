@@ -16,7 +16,7 @@ pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
     // JSON API.
     let mut router = Router::new()
         .route(
-            "/api/repos/{repo_id}/packages",
+            "/api/repos/{repo}/packages",
             get(packages::query_packages),
         )
         .route("/api/suggest/licenses", get(suggest::suggest_licenses))
