@@ -40,7 +40,7 @@ Download the latest `.sql.zst` dump from `https://dumps.repology.org`, then rest
 
 ```bash
 set -o pipefail
-wget https://dumps.repology.com/repology-database-dump-latest.sql.zst
+wget https://dumps.repology.org/repology-database-dump-latest.sql.zst
 docker compose up --build -d --wait db
 
 # Instead of loading the entire .sql dump directly into the DB
