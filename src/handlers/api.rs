@@ -10,7 +10,7 @@ use serde::Deserialize;
 use super::{json, paginate, ApiErr, ApiResp, Ctx, Result};
 use crate::{
     manager::Error,
-    models::{Cursor, Package, PackageQuery, PackageResults, Repo},
+    models::{Cursor, Package, PackageQuery, PackageResults, Repo, RepoQuery, Sort},
 };
 
 /// Maximum suggestions returned per query.
@@ -21,6 +21,15 @@ const LIMIT: usize = 15;
 #[serde(default)]
 pub struct SuggestQuery {
     pub q: String,
+}
+
+/// Get the list of all repositories.
+pub async fn get_repos(
+    State(ctx): State<Arc<Ctx>>,
+    Query(filter): Query<RepoQuery>,
+) -> Result<ApiResp<Vec<Repo>>> {
+    let repos = ctx.mgr.get_repos(&Sort::asc("name"), &filter).await?;
+    Ok(json(repos))
 }
 
 /// Get a repository by its slug.
