@@ -358,6 +358,8 @@ pub struct Package {
     pub slug: String,
     pub name: String,
     pub package: String,
+
+    #[serde(skip)]
     pub name_norm: String,
     pub excerpt: Option<String>,
     pub description: Option<String>,
@@ -367,6 +369,8 @@ pub struct Package {
     pub binary_names: StringArray,
 
     pub version: Option<String>,
+
+    #[serde(skip)]
     pub version_norm: Option<String>,
 
     pub homepage_url: Option<String>,
