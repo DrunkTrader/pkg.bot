@@ -64,8 +64,8 @@ makepkg -si" %}
   {%- set copy_content = install_command ~ "
 " ~ install_old %}
 {%- endif %}
-<section class="card package-install mt-6" aria-label="Install">
-  <div class="hstack justify-between">
+<section class="card package-install mt-6" aria-label="Install command">
+  <div class="hstack justify-between mb-4">
     <h4>Install</h4>
     {%- if install_command %}
       <button type="button" class="outline small" data-copy-content="{{ copy_content }}">Copy</button>

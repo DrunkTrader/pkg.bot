@@ -14,7 +14,7 @@
         {% if term %}Packages{% else %}<strong>{{ results.total | num }}{% if results.total_capped %}+{% endif %}</strong> package{{ results.total | pluralize }}{% endif %}
         {%- if term %} matching <strong>{{ term }}</strong>{% endif %} in
         {% include "partials/repo-name.html" %}
-        {% if render_time %}<span aria-label="Rendered in {{ render_time }}">&mdash; {{ render_time }}</span>{% endif %}
+        {% if render_time %}<span aria-label="Rendered in {{ render_time }}"> in {{ render_time }}</span>{% endif %}
       </div>
 
       {% include "partials/current-filters.html" %}

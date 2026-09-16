@@ -61,6 +61,11 @@ thead th {
   margin: var(--space-8) 0;
 }
 
+.logo > a {
+  display: inline-flex;
+  vertical-align: top;
+}
+
 .logo img {
   max-height: 3.5rem;
 }
@@ -438,7 +443,6 @@ code {
 
   #footer {
     gap: var(--space-4);
-    margin-block: var(--space-4);
   }
 
   .packages {
@@ -450,7 +454,27 @@ code {
 @media screen and (max-width: 600px) {
   .header {
     margin: var(--space-3) 0 0;
-    text-align: center;
+  }
+
+  body:not(.index) .header {
+    > .row {
+      gap: var(--space-2);
+    }
+
+    .logo {
+      img {
+        max-height: 2rem;
+      }
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .tagline {
+        font-size: var(--text-8);
+        margin: 0;
+      }
+    }
   }
 
   /* Reorder the layout and Put the upstream links above the info table */
@@ -484,6 +508,10 @@ code {
     display: block;
     min-width: 0;
 
+    .package-heading {
+      justify-content: space-between;
+    }
+
     thead {
       display: none;
     }
@@ -494,8 +522,8 @@ code {
 
     tbody tr {
       display: grid;
-      gap: var(--space-3);
-      margin-block-end: var(--space-3);
+      gap: var(--space-2);
+      margin-block-end: var(--space-4);
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius-medium);
@@ -508,7 +536,6 @@ code {
 
     tbody th {
       padding: var(--space-4) var(--space-4) var(--space-3);
-      border-bottom: 1px solid var(--border);
     }
 
     tbody td {
@@ -543,8 +570,17 @@ code {
       color: var(--muted-foreground);
     }
 
-    tbody td.col-version::before { content: "Version"; }
     tbody td.col-license::before { content: "License"; }
+    tbody td.col-version {
+      > span {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+      }
+      .package-version {
+        font-weight: var(--font-semibold);
+      }
+    }
     tbody td.col-maintainer::before { content: "Maintainers"; }
     tbody td.col-updated::before { content: "Updated"; }
 
