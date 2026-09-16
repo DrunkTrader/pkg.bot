@@ -1,6 +1,5 @@
-pub mod packages;
+pub mod api;
 pub mod site;
-pub mod suggest;
 
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
@@ -14,7 +13,7 @@ use tera::Tera;
 
 use crate::{
     manager::Manager,
-    models::{Cursor, PackageQuery, PackageResults, Repo, Suggestions},
+    models::{Repo, Suggestions},
 };
 
 /// Request start time inserted by the `track_time` middleware.
@@ -123,56 +122,6 @@ impl IntoResponse for ApiErr {
 }
 
 pub type Result<T> = std::result::Result<T, ApiErr>;
-
-/// Fetch a page of packages.
-pub async fn list_packages(ctx: &Ctx, repo: &Repo, q: &PackageQuery) -> Result<PackageResults> {
-    if !q.search().0.is_empty() {
-        let (packages, has_more) = ctx.mgr.search_packages(q).await?;
-
-        return Ok(PackageResults {
-            packages,
-            per_page: q.limit,
-            total: None,
-            total_capped: false,
-            page: q.page,
-            has_more,
-            next: None,
-            prev: None,
-        });
-    }
-
-    let (packages, has_more) = ctx.mgr.get_packages(q).await?;
-    let (total, total_capped) = if q.has_filters() {
-        ctx.mgr.count_packages(q).await?
-    } else {
-        (repo.package_count, false)
-    };
-
-    // Keyset pagination.
-    let (first, last) = (
-        packages.first().map(Cursor::of),
-        packages.last().map(Cursor::of),
-    );
-    let (next, prev) = if q.before.is_empty() {
-        (
-            if has_more { last } else { None },
-            if q.after.is_empty() { None } else { first },
-        )
-    } else {
-        (last, if has_more { first } else { None })
-    };
-
-    Ok(PackageResults {
-        packages,
-        per_page: q.limit,
-        total: Some(total),
-        total_capped,
-        page: 0,
-        has_more,
-        next,
-        prev,
-    })
-}
 
 /// Pagination helper.
 pub fn paginate(

@@ -9,32 +9,31 @@ use axum::{
     Router,
 };
 
-use crate::handlers::{packages, site, suggest, Ctx, ReqStarted};
+use crate::handlers::{api, site, Ctx, ReqStarted};
 
 /// Initialize HTTP routes.
 pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
     // JSON API.
     let mut router = Router::new()
-        .route(
-            "/api/repos/{repo}/packages",
-            get(packages::query_packages),
-        )
-        .route("/api/suggest/licenses", get(suggest::suggest_licenses))
-        .route("/api/suggest/platforms", get(suggest::suggest_platforms));
+        .route("/api/repos/{repo}", get(api::get_repo))
+        .route("/api/repos/{repo}/{pkg}", get(api::get_package))
+        .route("/api/repos/{repo}/packages", get(api::query_packages))
+        .route("/api/suggest/licenses", get(api::suggest_licenses))
+        .route("/api/suggest/platforms", get(api::suggest_platforms));
 
     // HMTL pages.
     if ctx.site.is_some() {
         router = router.merge(
             Router::new()
-                .route("/", get(site::index))
+                .route("/", get(site::render_index))
                 .route("/p/{page}", get(site::render_custom_page))
                 .route("/search", get(site::render_search_form))
                 .route("/repos", get(site::render_repos))
                 // `/repos/{repo}.xml` is handled inside render_search as axum can't do dynamic suffixes.
                 .route("/repos.xml", get(site::render_repos))
                 .route("/repos/{repo}", get(site::render_search))
-                .route("/repos/{repo}/{pkg}", get(site::get_package))
-                .route("/repos/{repo}/{pkg}/feed.xml", get(site::get_package))
+                .route("/repos/{repo}/{pkg}", get(site::render_package))
+                .route("/repos/{repo}/{pkg}/feed.xml", get(site::render_package))
                 .route("/static/{*path}", get(serve_static))
                 .layer(middleware::from_fn(req_time)),
         );

@@ -11,7 +11,10 @@ use axum::{
 };
 use axum_extra::extract::Query;
 
-use super::{list_packages, paginate, Ctx, ReqStarted};
+use super::{
+    api::{get_package_by_slug, search_packages},
+    paginate, ApiErr, Ctx, ReqStarted,
+};
 use crate::feed::{Feed, Item};
 use crate::models::{
     url_template, Package, PackageQuery, PackageResults, Repo, RepoQuery, Sort, REPO_SORT_FIELDS,
@@ -25,7 +28,7 @@ pub fn init_latest_repos(repos: &[Repo]) {
 }
 
 /// Landing page.
-pub async fn index(State(ctx): State<Arc<Ctx>>) -> Response {
+pub async fn render_index(State(ctx): State<Arc<Ctx>>) -> Response {
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "index");
     tpl_ctx.insert(
@@ -167,42 +170,24 @@ pub async fn render_search(
         None => (repo_slug.as_str(), false),
     };
 
-    let repo = match ctx.repo(repo_slug) {
-        Some(r) => r,
-        None => return not_found(&ctx, "Unknown repository."),
-    };
-
-    if let Err(e) = q.validate() {
-        return render_message(&ctx, StatusCode::BAD_REQUEST, "Invalid search", e);
-    }
-
-    // Pagination.
-    let (page, per_page, offset) = paginate(
-        q.page,
-        q.per_page,
+    let (repo, results) = match search_packages(
+        &ctx,
+        repo_slug,
+        &mut q,
         ctx.consts.site_max_per_page,
         ctx.consts.site_default_per_page,
-    );
-
-    q.repo_id = repo.id;
-    q.page = page;
-    q.per_page = per_page;
-    q.offset = offset;
-    q.limit = per_page;
-
-    let results = match list_packages(&ctx, repo, &q).await {
-        Ok(res) => res,
-        Err(e) => {
-            log::error!("error querying packages: {}", e.message);
-            PackageResults::default()
-        }
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(e) => return render_data_error(&ctx, e),
     };
 
     let raw_query = raw_query.unwrap_or_default();
     if feed {
         return render_feed(render_packages_rss(
             &ctx,
-            repo,
+            &repo,
             &results,
             q.search().0,
             &raw_query,
@@ -211,7 +196,7 @@ pub async fn render_search(
 
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "search");
-    tpl_ctx.insert("repo", repo);
+    tpl_ctx.insert("repo", &repo);
     tpl_ctx.insert("q", &q);
     insert_search(&mut tpl_ctx, &q);
     tpl_ctx.insert("results", &results);
@@ -272,30 +257,14 @@ pub async fn render_search(
 }
 
 /// Individual package page.
-pub async fn get_package(
+pub async fn render_package(
     State(ctx): State<Arc<Ctx>>,
     Path((repo_slug, pkg_slug)): Path<(String, String)>,
     uri: Uri,
 ) -> Response {
-    let repo = match ctx.repo(&repo_slug) {
-        Some(r) => r,
-        None => return not_found(&ctx, "Unknown repository."),
-    };
-
-    let pkg = match ctx.mgr.get_package(repo.id, &pkg_slug).await {
-        Ok(p) => p,
-        Err(crate::manager::Error::NotFound) => {
-            return not_found(&ctx, "The package does not exist in this repository.")
-        }
-        Err(e) => {
-            log::error!("error fetching package: {}", e);
-            return render_message(
-                &ctx,
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Error",
-                "Error fetching the package.",
-            );
-        }
+    let (repo, pkg) = match get_package_by_slug(&ctx, &repo_slug, &pkg_slug).await {
+        Ok(result) => result,
+        Err(e) => return render_data_error(&ctx, e),
     };
 
     let repo_url = format!("{}/repos/{}", ctx.consts.root_url, repo.slug);
@@ -314,7 +283,7 @@ pub async fn get_package(
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "package");
     tpl_ctx.insert("feed_url", &feed_url);
-    tpl_ctx.insert("repo", repo);
+    tpl_ctx.insert("repo", &repo);
 
     // The package's pages on the repo's own website.
     for (key, tpl) in [
@@ -329,6 +298,18 @@ pub async fn get_package(
     tpl_ctx.insert("pkg", &pkg);
 
     render(&ctx, "package.html", &mut tpl_ctx)
+}
+
+/// Render shared lookup and validation errors for the site.
+fn render_data_error(ctx: &Ctx, err: ApiErr) -> Response {
+    match err.status {
+        StatusCode::NOT_FOUND => not_found(ctx, &err.message),
+        StatusCode::BAD_REQUEST => render_message(ctx, err.status, "Invalid search", &err.message),
+        _ => {
+            log::error!("error fetching packages: {}", err.message);
+            render_message(ctx, err.status, "Error", "Error fetching packages.")
+        }
+    }
 }
 
 /// Expand a repository URL using the same fields on detail and results pages.
