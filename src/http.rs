@@ -17,8 +17,8 @@ pub fn init_handlers(ctx: Arc<Ctx>) -> Router {
     let mut router = Router::new()
         .route("/api/repos", get(api::get_repos))
         .route("/api/repos/{repo}", get(api::get_repo))
-        .route("/api/repos/{repo}/{pkg}", get(api::get_package))
         .route("/api/repos/{repo}/packages", get(api::query_packages))
+        .route("/api/repos/{repo}/packages/{pkg}", get(api::get_package))
         .route("/api/suggest/licenses", get(api::suggest_licenses))
         .route("/api/suggest/platforms", get(api::suggest_platforms));
 
