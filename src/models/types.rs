@@ -325,11 +325,18 @@ pub struct Repo {
 
     pub homepage_url: Option<String>,
     pub links: JsonString,
+
+    #[serde(skip)]
     pub pkg_url_template: Option<String>,
+
+    #[serde(skip)]
     pub source_url_template: Option<String>,
+
+    #[serde(skip)]
     pub meta: JsonString,
     pub brand_color: Option<String>,
 
+    #[serde(skip)]
     pub score: f64,
     pub package_count: i64,
     pub num_packages: i32,
@@ -372,6 +379,8 @@ pub struct Package {
     pub keywords: StringArray,
 
     pub status: PackageStatus,
+
+    #[serde(skip)]
     pub score: f64,
 
     pub meta: JsonString,
