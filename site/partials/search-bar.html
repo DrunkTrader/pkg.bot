@@ -3,6 +3,6 @@
 {% include "partials/search-inputs.html" %}
   <div class="hstack justify-end gap-6 mt-2">
     <a href="{{ consts.root_url | safe }}/search?repo={{ repo.slug | urlencode }}&amp;{{ scope }}={{ term | urlencode }}">Advanced search</a>
-    <a href="{{ consts.root_url | safe }}/repos">Repositories</a>
+    <a href="{{ consts.root_url | safe }}/repos">Repositories ({{ repos | length }})</a>
   </div>
 </form>

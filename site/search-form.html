@@ -7,7 +7,7 @@
 {% if repo is defined %}
 <form class="card advanced-search" data-search-form method="get" action="{{ consts.root_url | safe }}/repos/{{ repo.slug }}">
   <div data-field>
-    <label for="advanced-repo">Repository</label>
+    <label for="advanced-repo">Repository ({{ repos | length }})</label>
     <select id="advanced-repo" data-search-repo>
       {%- for r in repos %}
       <option value="{{ r.slug }}"{% if r.slug == repo.slug %} selected{% endif %}>{{ r.name }}</option>

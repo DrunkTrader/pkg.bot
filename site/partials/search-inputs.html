@@ -24,7 +24,7 @@
         {%- endfor %}
       </optgroup>
       <optgroup label="Even more repos">
-        <option value="{{ consts.root_url | safe }}/search" data-view-all-repos>View all repos</option>
+        <option value="{{ consts.root_url | safe }}/search" data-view-all-repos>View all repos ({{ repos | length}})</option>
       </optgroup>
     </select>
 
