@@ -314,6 +314,7 @@ impl Suggestions {
 /// A package repository (a distro's repo, channel or branch).
 #[derive(Debug, Clone, Default, Serialize, FromRow)]
 pub struct Repo {
+    #[serde(skip)]
     pub id: i64,
     pub slug: String,
     pub name: String,
