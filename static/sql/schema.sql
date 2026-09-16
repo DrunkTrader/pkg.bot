@@ -83,7 +83,6 @@ CREATE TABLE IF NOT EXISTS packages (
     score             REAL    NOT NULL DEFAULT 0,
 
     meta              TEXT    NOT NULL DEFAULT '{}' CHECK (json_valid(meta)),
-    hash              TEXT,                       -- use this to skip re-indexing if the hash matches the previous one
 
     -- These timestamps refelect upstream packages, not the local state.
     -- created_at is repology's first_seen.

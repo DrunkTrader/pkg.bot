@@ -76,7 +76,7 @@ WITH ranked AS (
 SELECT p.repo, p.trackname AS package, p.subrepos, p.srcname, p.binnames, p.visiblename,
        p.rawversion, p.version, p.maintainers, p.category, p.comment, p.licenses,
        p.effname, p.versionclass, p.platforms, p.subrepo,
-       JSONB_BUILD_OBJECT('id', p.id) AS meta,
+       JSONB_BUILD_OBJECT('repology_id', p.id) AS meta,
        -- Links are [kind, link_id] pairs. Only need to get project homepage (kind=0)
        -- as the rest of the urls (package permalink, repo) are in repos.metadata->'packagelinks.
        (SELECT k.url

@@ -374,7 +374,6 @@ pub struct Package {
     pub score: f64,
 
     pub meta: JsonString,
-    pub hash: Option<String>,
 
     pub maintainers: JsonArray<Maintainer>,
 

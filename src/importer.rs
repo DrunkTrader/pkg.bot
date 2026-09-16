@@ -84,7 +84,7 @@ struct SrcPackage {
 /// Repology fields retained in package metadata.
 #[derive(serde::Deserialize, serde::Serialize)]
 struct SrcPackageMeta {
-    id: i64,
+    repology_id: i64,
 }
 
 /// SQLite package.
