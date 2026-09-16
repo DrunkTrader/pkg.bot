@@ -134,6 +134,8 @@ async fn main() {
         Site { tpl, path }
     });
 
+    let root_url = config.app.root_url.clone();
+
     // Setup the global app context used in HTTP handlers.
     let ctx = Arc::new(Ctx {
         mgr,
@@ -164,7 +166,11 @@ async fn main() {
     let routes = http::init_handlers(ctx);
     let addr = config.app.address;
 
-    log::info!("starting server on {}", addr);
+    log::info!(
+        "starting server on {} (open {})",
+        addr,
+        root_url
+    );
 
     let listener = match tokio::net::TcpListener::bind(&addr).await {
         Ok(l) => l,

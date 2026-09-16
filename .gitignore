@@ -1,0 +1,25 @@
+# Rust
+/target/
+
+# Frontend dependencies and generated assets
+/site/node_modules/
+/site/dist/
+
+# Local configuration and runtime data
+/config.toml
+*.db
+*.db-shm
+*.db-wals
+*.sqlite
+*.sqlite3
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Editor and operating system files
+.DS_Store
+.vscode/
+*.swp
+*.swo
