@@ -43,12 +43,11 @@ thead th {
   height: 1.1em;
   vertical-align: middle;
   fill: currentColor;
-}
 
-
-/* The feed icon keeps its brand orange instead of inheriting currentColor. */
-.icon-rss {
-  color: light-dark(#f26522, #ff914d);
+  /* The feed icon keeps its brand orange instead of inheriting currentColor. */
+  &.icon-rss {
+    color: light-dark(#f26522, #ff914d);
+  }
 }
 
 .feed-link {
@@ -58,6 +57,12 @@ thead th {
 
   &:hover {
     opacity: 1;
+  }
+}
+
+.page {
+  section {
+    margin-bottom: var(--space-16);
   }
 }
 

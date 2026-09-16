@@ -3,24 +3,24 @@
       aria-label="Search packages" autocomplete="off" {% if not advanced_form %}autofocus required{% endif %} />
 
     <select id="{% if advanced_form %}advanced-{% endif %}repo" data-search-repo aria-label="Repository" required>
-      {% if latest_repos | filter(attribute="slug", value=repo.slug) | length == 0 %}
+      {%- if latest_repos | filter(attribute="slug", value=repo.slug) | length == 0 %}
       <option value="" disabled selected>Select repository</option>
-      {% endif %}
-      {% set top_repos = ["alpine", "arch", "aur", "debian", "fedora", "gentoo", "manjaro", "nix", "opensuse", "ubuntu"] %}
+      {% endif -%}
+      {%- set top_repos = ["alpine", "arch", "aur", "debian", "fedora", "gentoo", "manjaro", "nix", "opensuse", "ubuntu"] -%}
       <optgroup label="Top repos">
         {%- for r in latest_repos %}
-        {% set group = r.slug | split(pat="_") | first %}
-        {% if group in top_repos %}
+        {%- set group = r.slug | split(pat="_") | first -%}
+        {%- if group in top_repos %}
         <option value="{{ r.slug }}"{% if r.slug == repo.slug %} selected{% endif %}>{{ r.name }}</option>
-        {% endif %}
+        {%- endif -%}
         {%- endfor %}
       </optgroup>
       <optgroup label="More repos">
         {%- for r in latest_repos %}
-        {% set group = r.slug | split(pat="_") | first %}
-        {% if group not in top_repos %}
+        {%- set group = r.slug | split(pat="_") | first -%}
+        {%- if group not in top_repos %}
         <option value="{{ r.slug }}"{% if r.slug == repo.slug %} selected{% endif %}>{{ r.name }}</option>
-        {% endif %}
+        {%- endif -%}
         {%- endfor %}
       </optgroup>
       <optgroup label="Even more repos">
