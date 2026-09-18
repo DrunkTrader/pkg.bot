@@ -1,0 +1,21 @@
+# Rust build output
+/target/
+
+# Local application data and configuration
+/config.toml
+/data.db
+
+# Repology database dumps
+/*.sql.zst
+
+# Frontend dependencies and generated assets
+/site/node_modules/
+/site/dist/
+
+# Local markers created by the build
+/site/node_modules/.installed
+/site/dist/.built
+
+# Editor and operating system files
+.DS_Store
+.vscode/
