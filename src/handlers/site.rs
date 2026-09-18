@@ -608,6 +608,7 @@ mod search_repo_tests {
             },
         ];
         let mut context = tera::Context::new();
+        context.insert("repos", &repos);
         context.insert("latest_repos", &get_latest_repos(&repos));
         context.insert("repo", &repos[0]);
         context.insert("term", "");
@@ -623,7 +624,7 @@ mod search_repo_tests {
         assert!(!html.contains("Fedora 43"));
         assert!(html.contains("Fedora 44"));
         assert!(html.contains("disabled selected>Select repository"));
-        assert!(html.contains("data-view-all-repos>View all repos</option>"));
+        assert!(html.contains("data-view-all-repos>View all repos (2)</option>"));
         assert!(html.contains("/prefix/search"));
     }
 
