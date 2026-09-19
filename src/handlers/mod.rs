@@ -31,6 +31,9 @@ pub struct Ctx {
     /// indexer only show up on the next restart.
     pub repos: Vec<Repo>,
 
+    /// Latest repository update timestamp, collected once on boot.
+    pub last_updated: Option<String>,
+
     /// Autosuggestion fields.
     pub licenses: Suggestions,
     pub platforms: Suggestions,

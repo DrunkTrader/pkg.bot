@@ -31,6 +31,7 @@ pub fn init_latest_repos(repos: &[Repo]) {
 pub async fn render_index(State(ctx): State<Arc<Ctx>>) -> Response {
     let mut tpl_ctx = base_context(&ctx);
     tpl_ctx.insert("page_type", "index");
+    tpl_ctx.insert("last_updated", &ctx.last_updated);
     tpl_ctx.insert(
         "total_packages",
         &ctx.repos.iter().map(|r| r.package_count).sum::<i64>(),

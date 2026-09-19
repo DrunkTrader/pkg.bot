@@ -114,6 +114,7 @@ async fn main() {
     };
     log::info!("loaded {} repos", repos.len());
     handlers::site::init_latest_repos(&repos);
+    let last_updated = repos.iter().map(|r| &r.updated_at).max().cloned();
 
     // Autocomplete fields.
     let licenses = Suggestions::new(load(mgr.get_licenses().await, "licenses"));
@@ -138,6 +139,7 @@ async fn main() {
     let ctx = Arc::new(Ctx {
         mgr,
         repos,
+        last_updated,
         licenses,
         platforms,
         site,

@@ -5,6 +5,7 @@
   <p class="align-center text-light">
     <strong>{{ total_packages | num }}</strong> packages across
     <a href="{{ consts.root_url | safe }}/repos"><strong>{{ repos | length }}</strong> repositories</a>.
+    {% if last_updated %}Last updated <time datetime="{{ last_updated | truncate(length=10, end="") }}">{{ last_updated | truncate(length=10, end="") | date(format="%d %b %Y") }}</time>{% endif %}
   </p>
 </section>
 {% endblock %}
